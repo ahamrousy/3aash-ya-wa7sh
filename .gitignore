@@ -1,0 +1,13 @@
+# OS / editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+.vscode/
+.idea/
+
+# Never commit anything that could hold participant data
+*.csv
+*.xlsx
+secrets*
+*.local.js

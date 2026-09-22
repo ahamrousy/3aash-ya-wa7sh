@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-i18n-doc="pp.title">سياسة الخصوصية — عاش يا وحش</title>
+<meta name="description" content="سياسة خصوصية عاش يا وحش.">
+<meta name="theme-color" content="#0E1116">
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23FF5A1F'/><path d='M8 22 L14 10 L20 22 M11 18 H17' stroke='%230E1116' stroke-width='2.5' fill='none' stroke-linecap='round'/></svg>">
+</head>
+<body>
+
+<a class="skip" href="#main" data-i18n="skip.link">تخطَّ للمحتوى</a>
+
+<header class="site-header">
+  <div class="wrap site-header__in">
+    <a class="brand" href="index.html">
+      <span class="brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" focusable="false"><path d="M6 24 L16 8 L26 24 M10.5 19 H21.5"/></svg>
+      </span>
+      <span class="brand__text">
+        <strong class="brand__name" data-i18n="brand.name">عاش يا وحش</strong>
+        <small class="brand__tag" data-i18n="brand.tagline"></small>
+      </span>
+    </a>
+    <button type="button" class="lang" data-lang-toggle data-i18n-aria="lang.switch.aria">
+      <svg class="lang__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>
+      </svg>
+      <span data-i18n="lang.switch">English</span>
+    </button>
+  </div>
+</header>
+
+<main id="main" class="wrap doc">
+
+  <h1 data-i18n="pp.title">سياسة الخصوصية</h1>
+  <p class="doc__meta" data-i18n="pp.updated"></p>
+
+  <section><h2 data-i18n="pp.1.h"></h2><p data-i18n="pp.1.b"></p></section>
+  <section><h2 data-i18n="pp.2.h"></h2><p data-i18n="pp.2.b"></p></section>
+  <section><h2 data-i18n="pp.3.h"></h2><p data-i18n="pp.3.b"></p></section>
+  <section><h2 data-i18n="pp.4.h"></h2><p data-i18n="pp.4.b"></p></section>
+  <section><h2 data-i18n="pp.5.h"></h2><p data-i18n="pp.5.b"></p></section>
+  <section><h2 data-i18n="pp.6.h"></h2><p data-i18n="pp.6.b"></p></section>
+  <section><h2 data-i18n="pp.7.h"></h2><p data-i18n="pp.7.b"></p></section>
+  <section><h2 data-i18n="pp.8.h"></h2><p data-i18n="pp.8.b"></p></section>
+  <section><h2 data-i18n="pp.9.h"></h2><p data-i18n="pp.9.b"></p></section>
+
+  <section class="doc__contact">
+    <h2 data-i18n="pp.contact.h">للتواصل</h2>
+    <ul>
+      <li><a data-cfg="contactWhatsapp" rel="noopener">+20</a></li>
+      <li><a data-cfg="contactEmail" rel="noopener">coach@example.com</a></li>
+      <li><a data-cfg-href="instagramUrl" href="https://instagram.com/3aashyawa7sh" rel="noopener"
+             data-cfg="instagramHandle">@3aashyawa7sh</a></li>
+    </ul>
+  </section>
+
+  <p><a class="btn btn--ghost" href="index.html" data-i18n="pp.back">رجوع للاستمارة</a></p>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="site-footer__note" data-i18n="footer.made"></p>
+    <p class="site-footer__rights">© <span id="year"></span> <span data-i18n="footer.rights"></span></p>
+  </div>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+<script src="config.js"></script>
+<script src="i18n.js"></script>
+<script src="common.js"></script>
+<script>
+  AYW.initLang();
+  AYW.initLangToggle();
+  AYW.applyConfigText();
+  document.addEventListener('ayw:lang', function () { AYW.applyConfigText(); });
+</script>
+</body>
+</html>

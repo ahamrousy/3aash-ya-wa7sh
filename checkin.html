@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-i18n-doc="ci.title">متابعة التقدم — عاش يا وحش</title>
+<meta name="description" content="تسجيل التقدم الأسبوعي في عاش يا وحش.">
+<meta name="theme-color" content="#0E1116">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23FF5A1F'/><path d='M8 22 L14 10 L20 22 M11 18 H17' stroke='%230E1116' stroke-width='2.5' fill='none' stroke-linecap='round'/></svg>">
+</head>
+<body>
+
+<a class="skip" href="#main" data-i18n="skip.link">تخطَّ للمحتوى</a>
+
+<header class="site-header">
+  <div class="wrap site-header__in">
+    <a class="brand" href="index.html">
+      <span class="brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" focusable="false"><path d="M6 24 L16 8 L26 24 M10.5 19 H21.5"/></svg>
+      </span>
+      <span class="brand__text">
+        <strong class="brand__name" data-i18n="brand.name">عاش يا وحش</strong>
+        <small class="brand__tag" data-i18n="brand.tagline"></small>
+      </span>
+    </a>
+    <button type="button" class="lang" data-lang-toggle data-i18n-aria="lang.switch.aria">
+      <svg class="lang__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>
+      </svg>
+      <span data-i18n="lang.switch">English</span>
+    </button>
+  </div>
+</header>
+
+<main id="main" class="wrap doc">
+
+  <!-- ---------- the form ---------- -->
+  <section id="ci-screen-form">
+    <h1 data-i18n="ci.title">متابعة التقدم الأسبوعي</h1>
+    <p data-i18n="ci.lead"></p>
+    <p class="note" data-i18n="ci.privacy"></p>
+
+    <p id="ci-live" class="sr-only" role="status" aria-live="assertive"></p>
+
+    <form id="checkin" class="form-card" novalidate autocomplete="off" style="margin-block-start:2rem">
+
+      <!-- Honeypot -->
+      <div class="hp" aria-hidden="true">
+        <label for="ci-hp">Website</label>
+        <input type="text" id="ci-hp" name="website" tabindex="-1" autocomplete="off">
+      </div>
+
+      <div class="field" data-field="participant_id">
+        <label class="field__label" for="ci-id">
+          <span data-i18n="ci.id.label"></span><span class="req" aria-hidden="true">*</span>
+        </label>
+        <p class="field__hint" id="h-ci-id" data-i18n="ci.id.hint"></p>
+        <input class="input" id="ci-id" type="text" inputmode="text" autocapitalize="characters"
+               maxlength="16" placeholder="AYW-2026-0001" style="direction:ltr"
+               aria-describedby="h-ci-id e-ci-id" aria-invalid="false">
+        <p class="field__err" id="e-ci-id" role="alert"></p>
+      </div>
+
+      <div class="field" data-field="whatsapp">
+        <label class="field__label" for="ci-wa">
+          <span data-i18n="ci.whatsapp.label"></span><span class="req" aria-hidden="true">*</span>
+        </label>
+        <div class="phone">
+          <select class="input input--code" id="ci-wa-code" data-i18n-aria="f.whatsapp.country"></select>
+          <input class="input input--tel" id="ci-wa" type="tel" inputmode="tel" maxlength="15"
+                 data-i18n-ph="f.whatsapp.ph" aria-describedby="e-ci-whatsapp" aria-invalid="false">
+        </div>
+        <p class="field__err" id="e-ci-whatsapp" role="alert"></p>
+      </div>
+
+      <div class="field" data-field="weight_kg">
+        <label class="field__label" for="ci-weight">
+          <span data-i18n="ci.weight.label"></span><span class="req" aria-hidden="true">*</span>
+        </label>
+        <input class="input" id="ci-weight" type="text" inputmode="decimal"
+               aria-describedby="e-ci-weight_kg" aria-invalid="false">
+        <p class="field__err" id="e-ci-weight_kg" role="alert"></p>
+      </div>
+
+      <div class="field" data-field="waist_cm">
+        <label class="field__label" for="ci-waist"><span data-i18n="ci.waist.label"></span></label>
+        <input class="input" id="ci-waist" type="text" inputmode="decimal"
+               aria-describedby="e-ci-waist_cm" aria-invalid="false">
+        <p class="field__err" id="e-ci-waist_cm" role="alert"></p>
+      </div>
+
+      <div class="field" data-field="sessions_done">
+        <label class="field__label" for="ci-sessions">
+          <span data-i18n="ci.sessions.label"></span><span class="req" aria-hidden="true">*</span>
+        </label>
+        <input class="input" id="ci-sessions" type="text" inputmode="numeric" maxlength="2"
+               aria-describedby="e-ci-sessions_done" aria-invalid="false">
+        <p class="field__err" id="e-ci-sessions_done" role="alert"></p>
+      </div>
+
+      <div class="field" data-field="best_effort">
+        <label class="field__label" for="ci-best"><span data-i18n="ci.best.label"></span></label>
+        <input class="input" id="ci-best" type="text" maxlength="120" data-i18n-ph="ci.best.ph"
+               aria-describedby="e-ci-best_effort" aria-invalid="false">
+        <p class="field__err" id="e-ci-best_effort" role="alert"></p>
+      </div>
+
+      <fieldset class="field field--group" data-field="energy" aria-describedby="e-ci-energy">
+        <legend class="field__label">
+          <span data-i18n="ci.energy.label"></span><span class="req" aria-hidden="true">*</span>
+        </legend>
+        <div class="scale" id="ci-energy"></div>
+        <p class="scale__ends">
+          <span data-i18n="ci.energy.1"></span>
+          <span data-i18n="ci.energy.5"></span>
+        </p>
+        <p class="field__err" id="e-ci-energy" role="alert"></p>
+      </fieldset>
+
+      <div class="field" data-field="notes">
+        <label class="field__label" for="ci-notes"><span data-i18n="ci.notes.label"></span></label>
+        <textarea class="input input--area" id="ci-notes" rows="3" maxlength="500"
+                  data-i18n-ph="ci.notes.ph" aria-describedby="e-ci-notes"></textarea>
+        <p class="field__err" id="e-ci-notes" role="alert"></p>
+      </div>
+
+      <div id="ci-error" class="callout callout--error" hidden role="alert">
+        <p id="ci-error-body"></p>
+      </div>
+
+      <button type="submit" id="ci-submit" class="btn btn--primary btn--lg" data-i18n="ci.submit"></button>
+    </form>
+  </section>
+
+  <!-- ---------- confirmation ---------- -->
+  <section id="ci-screen-done" class="screen--done" hidden>
+    <span class="done__tick" aria-hidden="true">
+      <svg viewBox="0 0 48 48" focusable="false"><circle cx="24" cy="24" r="21"/><path d="M14 25l7 7 14-15"/></svg>
+    </span>
+    <h1 id="ci-done-h" tabindex="-1" data-i18n="ci.done.title"></h1>
+    <p data-i18n="ci.done.body"></p>
+    <p><button type="button" id="ci-again" class="btn btn--ghost" data-i18n="ci.done.again"></button></p>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <nav class="site-footer__nav" aria-label="footer">
+      <a href="index.html" data-i18n="pp.back">رجوع للاستمارة</a>
+      <a href="privacy.html" data-i18n="footer.privacy">سياسة الخصوصية</a>
+    </nav>
+    <p class="site-footer__note" data-i18n="footer.made"></p>
+    <p class="site-footer__rights">© <span id="year"></span> <span data-i18n="footer.rights"></span></p>
+  </div>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+<script src="config.js"></script>
+<script src="i18n.js"></script>
+<script src="common.js"></script>
+<script src="checkin.js"></script>
+</body>
+</html>
