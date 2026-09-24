@@ -1000,6 +1000,7 @@
 
   function goToStep(n, opts) {
     opts = opts || {};
+    var dir = n >= state.step ? 'fwd' : 'back';
     state.step = n;
     saveDraft();
 
@@ -1008,6 +1009,10 @@
     });
     var rev = $('#review');
     if (rev) rev.hidden = (n !== REVIEW_STEP);
+
+    if (opts.animate !== false) {
+      slideIn(n === REVIEW_STEP ? rev : $('#steps .step[data-step="' + n + '"]'), dir);
+    }
 
     if (n === REVIEW_STEP) buildReview();
     updateProgress();
@@ -1018,6 +1023,16 @@
       if (head) head.focus();
     }
     if (opts.scroll !== false) window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* The new step slides in from the side the reader is heading towards —
+     from the left in Arabic, from the right in English. CSS does the moving. */
+  function slideIn(sec, dir) {
+    if (!sec || !A.motionOK()) return;
+    sec.classList.remove('is-entering');
+    void sec.offsetWidth;                       // restart the animation
+    sec.setAttribute('data-dir', dir);
+    sec.classList.add('is-entering');
   }
 
   function updateProgress() {
@@ -1236,9 +1251,32 @@
     setSubmitting(false);
     $('#done-id').textContent = id || '—';
     showScreen('screen-done');
+    celebrate();
     var h = $('#done-h');
     if (h) h.focus();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* A short burst of the logo's own X, O and dash marks around the tick. */
+  function celebrate() {
+    var host = $('#burst');
+    if (!host) return;
+    host.innerHTML = '';
+    if (!A.motionOK()) return;
+    var shapes = ['x', 'o', 'dash'];
+    var colours = ['var(--accent)', 'var(--sun)', 'var(--plum)'];
+    var count = 18;
+    for (var i = 0; i < count; i++) {
+      var angle = (i / count) * Math.PI * 2 + Math.random() * 0.3;
+      var dist = 70 + Math.random() * 75;
+      var bit = el('span', { class: 'burst__bit burst__bit--' + shapes[i % 3] });
+      bit.style.setProperty('--tx', Math.round(Math.cos(angle) * dist) + 'px');
+      bit.style.setProperty('--ty', Math.round(Math.sin(angle) * dist) + 'px');
+      bit.style.setProperty('--r', Math.round(Math.random() * 360 - 180) + 'deg');
+      bit.style.setProperty('--c', colours[(i + 1) % 3]);
+      bit.style.animationDelay = (0.45 + Math.random() * 0.2).toFixed(2) + 's';
+      host.appendChild(bit);
+    }
   }
 
   /* ===========================================================================
@@ -1248,6 +1286,7 @@
     A.initLang();
     A.initLangToggle();
     A.applyConfigText();
+    A.initReveal();
 
     var hadDraft = loadDraft();
     renderAll();
@@ -1257,7 +1296,7 @@
       var step = state.step;
       renderAll();
       A.applyConfigText();
-      if (!$('#screen-form').hidden) goToStep(step, { focus: false, scroll: false });
+      if (!$('#screen-form').hidden) goToStep(step, { focus: false, scroll: false, animate: false });
       updateProgress();
       updateNav();
     });

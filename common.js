@@ -107,6 +107,7 @@ window.AYW = (function () {
    *   data-i18n-ph        → placeholder
    *   data-i18n-aria      → aria-label
    *   data-i18n-title     → title
+   *   data-i18n-alt       → alt (image descriptions)
    */
   function applyI18n(root) {
     $$('[data-i18n]', root).forEach(function (n) { n.textContent = t(n.getAttribute('data-i18n')); });
@@ -114,6 +115,7 @@ window.AYW = (function () {
     $$('[data-i18n-ph]', root).forEach(function (n) { n.setAttribute('placeholder', t(n.getAttribute('data-i18n-ph'))); });
     $$('[data-i18n-aria]', root).forEach(function (n) { n.setAttribute('aria-label', t(n.getAttribute('data-i18n-aria'))); });
     $$('[data-i18n-title]', root).forEach(function (n) { n.setAttribute('title', t(n.getAttribute('data-i18n-title'))); });
+    $$('[data-i18n-alt]', root).forEach(function (n) { n.setAttribute('alt', t(n.getAttribute('data-i18n-alt'))); });
 
     // <title> and the meta description, when the page declares keys for them.
     var titleEl = $('title[data-i18n-doc]');
@@ -190,6 +192,31 @@ window.AYW = (function () {
   }
 
   /* ---------------------------------------------------------------------------
+     Motion
+     A tiny script in each page's <head> adds class "motion" to <html> only when
+     the visitor has NOT asked their device to reduce motion. Everything that
+     moves checks that class (or the matching CSS media query) first.
+  --------------------------------------------------------------------------- */
+  function motionOK() {
+    return document.documentElement.classList.contains('motion');
+  }
+
+  /** Fade + lift each .reveal element into view the first time it is scrolled to. */
+  function initReveal(root) {
+    var items = $$('.reveal:not(.is-in)', root);
+    if (!motionOK() || !('IntersectionObserver' in window)) {
+      items.forEach(function (n) { n.classList.add('is-in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    items.forEach(function (n) { io.observe(n); });
+  }
+
+  /* ---------------------------------------------------------------------------
      Misc
   --------------------------------------------------------------------------- */
   function uuid() {
@@ -249,6 +276,7 @@ window.AYW = (function () {
     getLang: getLang, setLang: setLang, initLang: initLang,
     applyI18n: applyI18n, initLangToggle: initLangToggle,
     applyConfigText: applyConfigText,
+    motionOK: motionOK, initReveal: initReveal,
     post: post, uuid: uuid, AywError: AywError
   };
 })();

@@ -20,29 +20,38 @@ window.I18N = {
   ar: {
     /* --- page + brand ----------------------------------------------------- */
     'meta.title'       : 'عاش يا وحش — سجّل معانا',
-    'meta.desc'        : 'استمارة الاشتراك في عاش يا وحش. بياناتك بتوصل للكوتش أحمد عمروسي بس.',
+    'meta.desc'        : 'استمارة الاشتراك في عاش يا وحش. بياناتك بتوصل لفريق عاش يا وحش بس.',
     'brand.name'       : 'عاش يا وحش',
     'brand.tagline'    : 'ناس مننا مكملة في التغيير للأحسن',
-    'brand.coach'      : 'مع الكوتش د. أحمد عمروسي — لاعب ترايثلون وماراثون ونصف آيرونمان',
+    'brand.logo.alt'   : 'شعار عاش يا وحش',
     'lang.switch'      : 'English',
     'lang.switch.aria' : 'Switch the site to English',
     'skip.link'        : 'تخطَّ للمحتوى',
 
     /* --- opening screen --------------------------------------------------- */
     'intro.h1'           : 'أهلاً بيك في عاش يا وحش',
-    'intro.lead'         : 'مهما كان مستواك دلوقتي — لسه بتبدأ من الصفر، أو بتجري من سنين — في مكان ليك هنا. املا الاستمارة، والكوتش هيصمّملك برنامج على مقاسك إنت.',
+    'intro.lead'         : 'مهما كان مستواك دلوقتي — لسه بتبدأ من الصفر، أو بتجري من سنين — في مكان ليك هنا. املا الاستمارة، والمدربين هيصمّمولك برنامج على مقاسك إنت.',
     'intro.privacy.title': 'بياناتك أمانة',
-    'intro.privacy.body' : 'كل المعلومات اللي هتكتبها هنا بتوصل للكوتش أحمد عمروسي بس، ومش هتتشارك مع أي حد تاني، ولا هتتنشر، ولا هتستخدم في أي غرض غير تصميم برنامجك ومتابعة تقدمك. تقدر تطلب تعديل بياناتك أو مسحها في أي وقت.',
+    'intro.privacy.body' : 'كل المعلومات اللي هتكتبها هنا بتوصل لفريق عاش يا وحش بس — د. أحمد عمروسي والمدربين اللي بيصمموا برنامجك — ومش هتتشارك مع أي حد تاني، ولا هتتنشر، ولا هتستخدم في أي غرض غير تصميم برنامجك ومتابعة تقدمك. تقدر تطلب تعديل بياناتك أو مسحها في أي وقت.',
     'intro.privacy.link' : 'اقرأ سياسة الخصوصية كاملة',
     'intro.how.title'    : 'بتمشي إزاي؟',
     'intro.how.1.t'      : 'املا استمارتك',
     'intro.how.1.d'      : 'حوالي 5 دقايق. تقدر تقفل الصفحة وترجع تكمّل بعدين.',
-    'intro.how.2.t'      : 'الكوتش يراجعها بنفسه',
-    'intro.how.2.d'      : 'مش روبوت ولا حد تاني — أحمد بيقرا كل استمارة بإيده.',
+    'intro.how.2.t'      : 'فريقنا يراجعها بنفسه',
+    'intro.how.2.d'      : 'مش روبوت — كل استمارة بيقراها إنسان من فريقنا، سطر سطر.',
     'intro.how.3.t'      : 'يوصلك برنامجك',
     'intro.how.3.d'      : 'برنامج متفصّل على هدفك ووقتك وجسمك، ومتابعة أسبوعية.',
     'intro.cta'          : 'يلا نبدأ',
     'intro.note'         : 'الاستمارة 6 خطوات قصيرة، بالعربي أو بالإنجليزي زي ما تحب.',
+
+    /* --- who is behind it ------------------------------------------------- */
+    'team.title'         : 'مين ورا عاش يا وحش؟',
+    'team.founder.role'  : 'المؤسس',
+    'team.founder.name'  : 'د. أحمد عمروسي',
+    'team.founder.body'  : 'مهندس ورياضي تحمّل: لاعب ترايثلون، وعدّاء ماراثون، وأنهى سباق نصف آيرونمان. عارف يعني إيه تتمرن وإنت عندك شغل ومسؤوليات — وعلى ده اتبنت الفكرة كلها.',
+    'team.coaches.role'  : 'فريق التدريب',
+    'team.coaches.name'  : 'مدربين محترفين',
+    'team.coaches.body'  : 'برنامجك بيصممه ويتابعه مدربين محترفين، على أساس هدفك ووقتك وحالتك الصحية — مش برنامج جاهز متوزّع على الكل.',
 
     /* --- navigation ------------------------------------------------------- */
     'nav.next'    : 'التالي',
@@ -62,7 +71,7 @@ window.I18N = {
     'step.2.title' : 'هدفك إيه؟',
     'step.2.sub'   : 'اختار كل اللي ينطبق عليك — تقدر تختار أكتر من واحد.',
     'step.3.title' : 'بيانات الجسم',
-    'step.3.sub'   : 'الأرقام دي بتساعد الكوتش يحسب أحمال التدريب صح. محدش غيره بيشوفها.',
+    'step.3.sub'   : 'الأرقام دي بتساعد المدرب يحسب أحمال التدريب صح. محدش برّه فريقنا بيشوفها.',
     'step.4.title' : 'نشاطك دلوقتي',
     'step.4.sub'   : 'قولنا بتعمل إيه حالياً، حتى لو حاجة بسيطة.',
     'step.5.title' : 'وقتك وإمكانياتك',
@@ -76,7 +85,7 @@ window.I18N = {
     'f.name.label'          : 'الاسم بالكامل',
     'f.name.ph'             : 'مثلاً: أحمد محمود',
     'f.whatsapp.label'      : 'رقم الواتساب',
-    'f.whatsapp.hint'       : 'ده الرقم اللي الكوتش هيكلمك عليه.',
+    'f.whatsapp.hint'       : 'ده الرقم اللي هنكلمك عليه.',
     'f.whatsapp.ph'         : '1012345678',
     'f.whatsapp.country'    : 'كود الدولة',
     'f.email.label'         : 'الإيميل',
@@ -110,7 +119,7 @@ window.I18N = {
     'f.community_needs.label'        : 'بتدوّر على إيه بالظبط؟',
     'f.community_other.label'        : 'اكتب اللي بتدوّر عليه',
     'f.why_now.label'                : 'بكلامك إنت: ليه دلوقتي؟',
-    'f.why_now.hint'                 : 'السطرين دول بيساعدوا الكوتش يفهم دافعك أكتر من أي رقم.',
+    'f.why_now.hint'                 : 'السطرين دول بيساعدوا المدرب يفهم دافعك أكتر من أي رقم.',
     'f.why_now.ph'                   : 'اكتب اللي جواك...',
 
     /* --- step 3: body ----------------------------------------------------- */
@@ -130,7 +139,7 @@ window.I18N = {
     'f.waist_cm.tipTitle'      : 'إزاي تقيس محيط البطن صح',
     'f.waist_cm.tip'           : 'قف واقف ومرتاح، ولف الشريط حوالين بطنك عند مستوى السُرة بالظبط. خرّج نَفَسك عادي من غير ما تشدّ بطنك، وبعدين اقرا الرقم. خلي الشريط مستوي مش مايل.',
     'f.waist_cm.tipClose'      : 'تمام، فهمت',
-    'f.body.note'              : 'الأرقام دي بتتحسب للكوتش بس عشان يظبط البرنامج. مش هنعرض عليك أي تقييم ولا وصف لجسمك.',
+    'f.body.note'              : 'الأرقام دي بتتحسب لفريق التدريب بس عشان يظبط البرنامج. مش هنعرض عليك أي تقييم ولا وصف لجسمك.',
 
     /* --- step 4: current activity ----------------------------------------- */
     'f.no_sports.label'            : 'مش بعمل أي رياضة دلوقتي',
@@ -164,13 +173,13 @@ window.I18N = {
     'parq.supervised'        : 'حصل ودكتور قالك إنك المفروض تتمرن تحت إشراف طبي بس؟',
     'parq.pregnant'          : 'إنتي حامل دلوقتي، أو ولدتي في آخر 6 شهور؟',
     'f.injuries_notes.label' : 'إصابات أو ملاحظات صحية',
-    'f.injuries_notes.hint'  : 'أي حاجة تحب الكوتش يعرفها — إصابة قديمة، عملية، حساسية، أي حاجة.',
+    'f.injuries_notes.hint'  : 'أي حاجة تحب المدرب يعرفها — إصابة قديمة، عملية، حساسية، أي حاجة.',
     'f.injuries_notes.ph'    : 'اختياري...',
     'clearance.title'        : 'خد بالك — ومتقلقش',
-    'clearance.body'         : 'واحدة أو أكتر من إجاباتك محتاجة إن دكتور يطمّن عليك الأول. ده طبيعي جداً وبيحصل كتير، ومش معناه إنك متقدرش تتمرن. كمّل الاستمارة عادي، والكوتش هيتواصل معاك ويتفق معاك على الخطوة الجاية قبل ما تبدأ أي تمرين.',
+    'clearance.body'         : 'واحدة أو أكتر من إجاباتك محتاجة إن دكتور يطمّن عليك الأول. ده طبيعي جداً وبيحصل كتير، ومش معناه إنك متقدرش تتمرن. كمّل الاستمارة عادي، وفريقنا هيتواصل معاك ويتفق معاك على الخطوة الجاية قبل ما تبدأ أي تمرين.',
     'consent.title'          : 'الموافقات',
     'consent.accuracy'       : 'بأكد إن البيانات اللي كتبتها صحيحة.',
-    'consent.data'           : 'موافق إن الكوتش — هو بس — يحتفظ ببياناتي ويستخدمها في تصميم برنامجي ومتابعتي، زي ما مكتوب في بيان الخصوصية.',
+    'consent.data'           : 'موافق إن فريق عاش يا وحش — د. أحمد عمروسي والمدربين اللي بيتابعوني، وهم بس — يحتفظوا ببياناتي ويستخدموها في تصميم برنامجي ومتابعتي، زي ما مكتوب في بيان الخصوصية.',
     'consent.media'          : 'يشرّفني إني أظهر في محتوى عاش يا وحش (وهتتاخد موافقتي في كل مرة قبلها).',
     'consent.media.hint'     : 'اختياري تماماً، ومش هيفرق في برنامجك بأي شكل.',
 
@@ -183,7 +192,7 @@ window.I18N = {
 
     /* --- confirmation ----------------------------------------------------- */
     'done.title'      : 'عاش يا وحش! وصلتنا استمارتك',
-    'done.body'       : 'خلاص، إنت عملت أصعب خطوة — اللي هي إنك تبدأ. الكوتش أحمد هيقرا كلامك بنفسه ويبدأ يفصّل برنامجك.',
+    'done.body'       : 'خلاص، إنت عملت أصعب خطوة — اللي هي إنك تبدأ. فريق عاش يا وحش هيقرا كلامك بنفسه، والمدربين هيبدأوا يفصّلوا برنامجك.',
     'done.id.label'   : 'رقمك في عاش يا وحش',
     'done.id.hint'    : 'احفظ الرقم ده. هتستخدمه كل أسبوع لما تسجّل تقدمك.',
     'done.copy'       : 'انسخ الرقم',
@@ -326,20 +335,20 @@ window.I18N = {
     'footer.ig'      : 'إنستجرام',
     'footer.checkin' : 'متابعة التقدم',
     'footer.rights'  : 'عاش يا وحش',
-    'footer.made'    : 'بياناتك بتتخزّن عند الكوتش بس. مفيش تتبّع ولا إعلانات على الصفحة دي.',
+    'footer.made'    : 'بياناتك بتتخزّن عند فريق عاش يا وحش بس. مفيش تتبّع ولا إعلانات على الصفحة دي.',
 
     /* --- privacy page ----------------------------------------------------- */
     'pp.title'     : 'سياسة الخصوصية',
     'pp.updated'   : 'آخر تحديث: سبتمبر 2026',
     'pp.back'      : 'رجوع للاستمارة',
     'pp.1.h'       : 'مين اللي بيجمع البيانات؟',
-    'pp.1.b'       : 'د. أحمد عمروسي، مؤسس وكوتش «عاش يا وحش». هو المتحكم الوحيد في البيانات، وهو الوحيد اللي بيوصل لها.',
+    'pp.1.b'       : 'د. أحمد عمروسي، مؤسس «عاش يا وحش»، هو المسؤول عن بياناتك. محدش بيوصل لها غيره وغير المدربين اللي بيشتغلوا على برنامجك إنت، وفي حدود اللي محتاجينه بس عشان يصمموه ويتابعوه.',
     'pp.2.h'       : 'بنجمع إيه بالظبط؟',
     'pp.2.b'       : 'اللي إنت بتكتبه في الاستمارة بس: اسمك، رقم الواتساب، والإيميل والمدينة لو كتبتهم، أهدافك الرياضية، سنك ونوعك ووزنك وطولك ومحيط بطنك، نشاطك الحالي، أوقاتك المتاحة، وإجاباتك على أسئلة السلامة الصحية. مفيش أي حاجة بتتجمع من ورا ظهرك.',
     'pp.3.h'       : 'بنستخدمها في إيه؟',
-    'pp.3.b'       : 'في غرض واحد بس: إن الكوتش يصمّم برنامج تدريب مناسب ليك ويتابع تقدمك فيه. مش بنستخدمها في إعلانات، ولا بنبيعها، ولا بنشاركها مع أي شركة أو شخص تاني، ولا بننشرها.',
+    'pp.3.b'       : 'في غرض واحد بس: إن فريق التدريب يصمّم برنامج تدريب مناسب ليك ويتابع تقدمك فيه. مش بنستخدمها في إعلانات، ولا بنبيعها، ولا بنشاركها مع أي شركة أو شخص تاني، ولا بننشرها.',
     'pp.4.h'       : 'بتتخزّن فين؟',
-    'pp.4.b'       : 'في جدول Google Sheets خاص، مقفول، ملكيته للكوتش لوحده ومحدش تاني مشارَك فيه. الموقع نفسه مبيخزّنش أي بيانات على سيرفر، والصفحة دي مفيهاش Google Analytics ولا Facebook Pixel ولا أي أداة تتبّع.',
+    'pp.4.b'       : 'في جدول Google Sheets خاص ومقفول، ملكيته لد. أحمد عمروسي. مش متاح للعامة، ومحدش بيوصل له غير فريق عاش يا وحش. الموقع نفسه مبيخزّنش أي بيانات على سيرفر، والصفحة دي مفيهاش Google Analytics ولا Facebook Pixel ولا أي أداة تتبّع.',
     'pp.5.h'       : 'بنحتفظ بيها لحد إمتى؟',
     'pp.5.b'       : 'طول ما إنت مشترك في البرنامج، وبعدها بسنة واحدة عشان لو رجعت نبقى فاكرين تاريخك. بعد كده بتتمسح، أو تقدر تطلب مسحها في أي وقت قبل كده.',
     'pp.6.h'       : 'حقوقك',
@@ -354,7 +363,7 @@ window.I18N = {
 
     /* --- check-in page (Phase 2) ------------------------------------------ */
     'ci.title'          : 'متابعة التقدم الأسبوعي',
-    'ci.lead'           : 'كل أسبوع، سجّل أرقامك في دقيقة واحدة. الكوتش بيشوف الأرقام دي وبيظبط برنامجك على أساسها.',
+    'ci.lead'           : 'كل أسبوع، سجّل أرقامك في دقيقة واحدة. المدرب بيشوف الأرقام دي وبيظبط برنامجك على أساسها.',
     'ci.privacy'        : 'الصفحة دي بتستقبل بس — عمرها ما بتعرض بياناتك ولا بيانات أي حد تاني على الشاشة.',
     'ci.id.label'       : 'رقمك في عاش يا وحش',
     'ci.id.hint'        : 'الرقم اللي وصلك بعد ما بعتّ الاستمارة، شكله كده: AYW-2026-0001',
@@ -367,7 +376,7 @@ window.I18N = {
     'ci.energy.label'   : 'مستوى طاقتك الأسبوع ده',
     'ci.energy.1'       : 'تعبان خالص',
     'ci.energy.5'       : 'في كامل نشاطي',
-    'ci.notes.label'    : 'ملاحظات للكوتش',
+    'ci.notes.label'    : 'ملاحظات للمدرب',
     'ci.notes.ph'       : 'أي حاجة حصلت الأسبوع ده...',
     'ci.submit'         : 'سجّل الأسبوع',
     'ci.sending'        : 'بيتسجّل...',
@@ -375,7 +384,7 @@ window.I18N = {
     'ci.done.body'      : 'أسبوع كمان في الجيب. شوفك الأسبوع الجاي يا وحش.',
     'ci.done.again'     : 'تسجيل تاني',
     'ci.err.id'         : 'الرقم شكله مش مظبوط. المفروض يبقى زي: AYW-2026-0001',
-    'ci.err.match'      : 'مفيش حد عندنا بالرقم ده والواتساب ده مع بعض. راجع الاتنين، ولو المشكلة كمّلت كلّم الكوتش.',
+    'ci.err.match'      : 'مفيش حد عندنا بالرقم ده والواتساب ده مع بعض. راجع الاتنين، ولو المشكلة كمّلت كلّمنا على الواتساب.',
     'ci.err.generic'    : 'حصلت مشكلة في الإرسال. جرّب تاني بعد شوية.'
   },
 
@@ -385,29 +394,38 @@ window.I18N = {
   en: {
     /* --- page + brand ----------------------------------------------------- */
     'meta.title'       : '3aash Ya Wa7sh — Join us',
-    'meta.desc'        : 'Sign-up form for 3aash Ya Wa7sh. Your data goes only to Coach Ahmed Amrousy.',
+    'meta.desc'        : 'Sign-up form for 3aash Ya Wa7sh. Your data goes only to the 3aash Ya Wa7sh team.',
     'brand.name'       : '3aash Ya Wa7sh',
     'brand.tagline'    : 'People like us, still changing for the better',
-    'brand.coach'      : 'With Coach Dr. Ahmed Amrousy — triathlete, marathoner, half-Ironman finisher',
+    'brand.logo.alt'   : '3aash Ya Wa7sh logo',
     'lang.switch'      : 'العربية',
     'lang.switch.aria' : 'حوّل الموقع للعربية',
     'skip.link'        : 'Skip to content',
 
     /* --- opening screen --------------------------------------------------- */
     'intro.h1'           : 'Welcome to 3aash Ya Wa7sh',
-    'intro.lead'         : 'Wherever you are right now — starting from zero, or years into running — there is a place for you here. Fill in the form and the coach will build a program cut to your size.',
+    'intro.lead'         : 'Wherever you are right now — starting from zero, or years into running — there is a place for you here. Fill in the form and our coaches will build a program cut to your size.',
     'intro.privacy.title': 'Your data is a trust',
-    'intro.privacy.body' : 'Everything you write here goes to Coach Ahmed Amrousy and no one else. It will not be shared, published, or used for anything other than designing your program and following your progress. You can ask for your data to be corrected or deleted at any time.',
+    'intro.privacy.body' : 'Everything you write here goes to the 3aash Ya Wa7sh team only — Dr. Ahmed Amrousy and the coaches who design your program — and no one else. It will not be shared, published, or used for anything other than designing your program and following your progress. You can ask for your data to be corrected or deleted at any time.',
     'intro.privacy.link' : 'Read the full privacy policy',
     'intro.how.title'    : 'How it works',
     'intro.how.1.t'      : 'Fill your form',
     'intro.how.1.d'      : 'About 5 minutes. You can close the page and come back to finish it.',
-    'intro.how.2.t'      : 'The coach reviews it personally',
-    'intro.how.2.d'      : 'No bot, no assistant — Ahmed reads every single form himself.',
+    'intro.how.2.t'      : 'Our team reviews it personally',
+    'intro.how.2.d'      : 'No bot — a real person on our team reads every form, line by line.',
     'intro.how.3.t'      : 'You get your program',
     'intro.how.3.d'      : 'Built around your goal, your schedule and your body, with weekly follow-up.',
     'intro.cta'          : "Let's start",
     'intro.note'         : '6 short steps, in Arabic or English — whichever you prefer.',
+
+    /* --- who is behind it ------------------------------------------------- */
+    'team.title'         : 'Who’s behind 3aash Ya Wa7sh?',
+    'team.founder.role'  : 'Founder',
+    'team.founder.name'  : 'Dr. Ahmed Amrousy',
+    'team.founder.body'  : 'Engineer and endurance athlete: triathlete, marathoner and half-Ironman finisher. He knows what it takes to train around a full-time career and real responsibilities — and that is what the whole idea is built on.',
+    'team.coaches.role'  : 'Coaching team',
+    'team.coaches.name'  : 'Professional coaches',
+    'team.coaches.body'  : 'Your program is designed and followed up by professional coaches, built around your goal, your schedule and your health — not a template handed to everyone.',
 
     /* --- navigation ------------------------------------------------------- */
     'nav.next'    : 'Next',
@@ -427,7 +445,7 @@ window.I18N = {
     'step.2.title' : "What's your objective?",
     'step.2.sub'   : 'Pick everything that applies — you can choose more than one.',
     'step.3.title' : 'Body data',
-    'step.3.sub'   : 'These numbers help the coach set your training loads correctly. Nobody else sees them.',
+    'step.3.sub'   : 'These numbers help your coach set training loads correctly. Nobody outside our team sees them.',
     'step.4.title' : 'What you do now',
     'step.4.sub'   : 'Tell us what you are doing today, even if it is small.',
     'step.5.title' : 'Your time and access',
@@ -441,7 +459,7 @@ window.I18N = {
     'f.name.label'          : 'Full name',
     'f.name.ph'             : 'e.g. Ahmed Mahmoud',
     'f.whatsapp.label'      : 'WhatsApp number',
-    'f.whatsapp.hint'       : 'This is the number the coach will message you on.',
+    'f.whatsapp.hint'       : 'This is the number we will message you on.',
     'f.whatsapp.ph'         : '1012345678',
     'f.whatsapp.country'    : 'Country code',
     'f.email.label'         : 'Email',
@@ -475,7 +493,7 @@ window.I18N = {
     'f.community_needs.label'        : 'What exactly are you looking for?',
     'f.community_other.label'        : 'Describe what you are looking for',
     'f.why_now.label'                : 'In your own words: why now?',
-    'f.why_now.hint'                 : 'These two lines tell the coach more about your motivation than any number.',
+    'f.why_now.hint'                 : 'These two lines tell your coach more about your motivation than any number.',
     'f.why_now.ph'                   : 'Write whatever is on your mind...',
 
     /* --- step 3: body ----------------------------------------------------- */
@@ -495,7 +513,7 @@ window.I18N = {
     'f.waist_cm.tipTitle'      : 'How to measure your waist correctly',
     'f.waist_cm.tip'           : 'Stand up straight and relaxed. Wrap the tape around your belly exactly at the level of your navel. Breathe out normally without pulling your stomach in, then read the number. Keep the tape level, not slanted.',
     'f.waist_cm.tipClose'      : 'Got it',
-    'f.body.note'              : 'These are calculated for the coach only, to set your program. We will never show you a rating or a label about your body.',
+    'f.body.note'              : 'These are calculated for the coaching team only, to set your program. We will never show you a rating or a label about your body.',
 
     /* --- step 4: current activity ----------------------------------------- */
     'f.no_sports.label'            : "I'm not doing any sport right now",
@@ -529,26 +547,26 @@ window.I18N = {
     'parq.supervised'        : 'Has a doctor ever said you should only do medically supervised physical activity?',
     'parq.pregnant'          : 'Are you currently pregnant, or have you given birth in the last 6 months?',
     'f.injuries_notes.label' : 'Injuries or health notes',
-    'f.injuries_notes.hint'  : 'Anything you want the coach to know — an old injury, surgery, allergy, anything.',
+    'f.injuries_notes.hint'  : 'Anything you want your coach to know — an old injury, surgery, allergy, anything.',
     'f.injuries_notes.ph'    : 'Optional...',
     'clearance.title'        : 'One thing to sort out — no need to worry',
-    'clearance.body'         : 'One or more of your answers means it is worth getting a doctor’s green light first. This is very common and it does not mean you cannot train. Finish the form normally — the coach will contact you and agree the next step with you before you start any training.',
+    'clearance.body'         : 'One or more of your answers means it is worth getting a doctor’s green light first. This is very common and it does not mean you cannot train. Finish the form normally — our team will contact you and agree the next step with you before you start any training.',
     'consent.title'          : 'Consent',
     'consent.accuracy'       : 'I confirm that the information I entered is accurate.',
-    'consent.data'           : 'I agree that the coach alone may store and use my data to design and follow up my program, as described in the privacy statement.',
+    'consent.data'           : 'I agree that the 3aash Ya Wa7sh team alone — Dr. Ahmed Amrousy and the coaches following my program — may store and use my data to design and follow up my program, as described in the privacy statement.',
     'consent.media'          : "I'd like to be featured (with my permission each time) in 3aash Ya Wa7sh content.",
     'consent.media.hint'     : 'Entirely optional, and it changes nothing about your program.',
 
     /* --- review ----------------------------------------------------------- */
     'review.empty'   : '— not answered —',
-    'review.confirm' : 'All good? Hit submit and it reaches the coach straight away.',
+    'review.confirm' : 'All good? Hit submit and it reaches our team straight away.',
     'review.yes'     : 'Yes',
     'review.no'      : 'No',
     'review.na'      : 'Not applicable',
 
     /* --- confirmation ----------------------------------------------------- */
     'done.title'      : '3aash ya wa7sh! We got your form',
-    'done.body'       : 'That was the hardest part — starting. Coach Ahmed will read your answers himself and start building your program.',
+    'done.body'       : 'That was the hardest part — starting. The 3aash Ya Wa7sh team will read your answers personally, and our coaches will start building your program.',
     'done.id.label'   : 'Your 3aash Ya Wa7sh ID',
     'done.id.hint'    : 'Keep this number. You will use it every week when you log your progress.',
     'done.copy'       : 'Copy ID',
@@ -691,20 +709,20 @@ window.I18N = {
     'footer.ig'      : 'Instagram',
     'footer.checkin' : 'Progress check-in',
     'footer.rights'  : '3aash Ya Wa7sh',
-    'footer.made'    : 'Your data is stored only by the coach. No tracking and no ads on this page.',
+    'footer.made'    : 'Your data is kept by the 3aash Ya Wa7sh team only. No tracking and no ads on this page.',
 
     /* --- privacy page ----------------------------------------------------- */
     'pp.title'     : 'Privacy policy',
     'pp.updated'   : 'Last updated: September 2026',
     'pp.back'      : 'Back to the form',
     'pp.1.h'       : 'Who collects the data?',
-    'pp.1.b'       : 'Dr. Ahmed Amrousy, founder and coach of 3aash Ya Wa7sh. He is the sole data controller and the only person with access.',
+    'pp.1.b'       : 'Dr. Ahmed Amrousy, founder of 3aash Ya Wa7sh, is responsible for your data. The only other people who can see it are the coaches working on your own program, and only as much as they need to design and follow it up.',
     'pp.2.h'       : 'What exactly is collected?',
     'pp.2.b'       : 'Only what you type into the form: your name, WhatsApp number, your email and city if you give them, your sporting objectives, your age, gender, weight, height and waist measurement, your current activity, your availability, and your answers to the health safety questions. Nothing is collected behind your back.',
     'pp.3.h'       : 'What is it used for?',
-    'pp.3.b'       : 'One purpose only: so the coach can design a training program that suits you and follow your progress on it. It is not used for advertising, not sold, not shared with any company or person, and not published.',
+    'pp.3.b'       : 'One purpose only: so our coaches can design a training program that suits you and follow your progress on it. It is not used for advertising, not sold, not shared with any company or person, and not published.',
     'pp.4.h'       : 'Where is it stored?',
-    'pp.4.b'       : 'In a private, locked Google Sheet owned solely by the coach, shared with nobody. This website stores nothing on a server of its own, and these pages contain no Google Analytics, no Facebook Pixel and no tracking tool of any kind.',
+    'pp.4.b'       : 'In a private, locked Google Sheet owned by Dr. Ahmed Amrousy. It is not public, and nobody outside the 3aash Ya Wa7sh team can reach it. This website stores nothing on a server of its own, and these pages contain no Google Analytics, no Facebook Pixel and no tracking tool of any kind.',
     'pp.5.h'       : 'How long is it kept?',
     'pp.5.b'       : 'For as long as you are in the program, plus one year afterwards, so your history is there if you come back. After that it is deleted — and you can ask for deletion at any time before that.',
     'pp.6.h'       : 'Your rights',
@@ -719,7 +737,7 @@ window.I18N = {
 
     /* --- check-in page (Phase 2) ------------------------------------------ */
     'ci.title'          : 'Weekly progress check-in',
-    'ci.lead'           : 'Every week, log your numbers in under a minute. The coach uses them to adjust your program.',
+    'ci.lead'           : 'Every week, log your numbers in under a minute. Your coach uses them to adjust your program.',
     'ci.privacy'        : 'This page only receives — it never displays your data, or anyone else’s, back on screen.',
     'ci.id.label'       : 'Your 3aash Ya Wa7sh ID',
     'ci.id.hint'        : 'The ID you received after sending your form. It looks like: AYW-2026-0001',
@@ -732,7 +750,7 @@ window.I18N = {
     'ci.energy.label'   : 'Your energy level this week',
     'ci.energy.1'       : 'Completely drained',
     'ci.energy.5'       : 'Full of energy',
-    'ci.notes.label'    : 'Notes for the coach',
+    'ci.notes.label'    : 'Notes for your coach',
     'ci.notes.ph'       : 'Anything that happened this week...',
     'ci.submit'         : 'Log this week',
     'ci.sending'        : 'Logging...',
@@ -740,7 +758,7 @@ window.I18N = {
     'ci.done.body'      : 'Another week in the bank. See you next week, wa7sh.',
     'ci.done.again'     : 'Log another',
     'ci.err.id'         : 'That ID does not look right. It should look like: AYW-2026-0001',
-    'ci.err.match'      : 'We have nobody with that ID and that WhatsApp number together. Check both, and if it keeps failing message the coach.',
+    'ci.err.match'      : 'We have nobody with that ID and that WhatsApp number together. Check both, and if it keeps failing message us on WhatsApp.',
     'ci.err.generic'    : 'Something went wrong sending that. Please try again in a moment.'
   }
 };

@@ -192,6 +192,7 @@
     A.initLang();
     A.initLangToggle();
     A.applyConfigText();
+    A.initReveal();
     document.addEventListener('ayw:lang', function () {
       A.applyConfigText();
       setSending(sending);

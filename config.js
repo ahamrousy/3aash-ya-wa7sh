@@ -3,7 +3,7 @@
    -----------------------------------------------------------------------------
    Nothing secret belongs in this file. This repository is public, so the Apps
    Script URL below is the only "address" the browser knows. All validation and
-   all storage happen on the Apps Script side, inside the coach's private Google
+   all storage happen on the Apps Script side, inside the founder's private Google
    Sheet. No keys, no passwords, no participant data ever live here.
    ========================================================================== */
 
@@ -35,8 +35,8 @@ window.AYW_CONFIG = {
         Change the wording freely; it is shown exactly as written.
   --------------------------------------------------------------------------- */
   responseTime: {
-    ar: 'الكوتش بيراجع كل استمارة بنفسه، فهيتواصل معاك خلال 3 أيام شغل بالكتير.',
-    en: 'The coach reviews every form personally, so expect to hear back within 3 working days at most.'
+    ar: 'فريقنا بيراجع كل استمارة بنفسه، فهنتواصل معاك خلال 3 أيام شغل بالكتير.',
+    en: 'Our team reviews every form personally, so expect to hear back within 3 working days at most.'
   },
 
   /* ---------------------------------------------------------------------------

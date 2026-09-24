@@ -5,19 +5,25 @@
    instead of left / right) so the whole layout mirrors itself automatically
    when <html dir> flips between rtl and ltr — there is no separate RTL sheet.
 
-   TO RESTYLE THE SITE you only need the :root block below: one accent colour,
-   two fonts, and the spacing scale. Everything else follows from those.
+   TO RESTYLE THE SITE you only need the :root block below. The colours are
+   taken straight from the عاش يا وحش logo: its blue, its yellow and the dark
+   plum of its outline. Everything else follows from those tokens.
    ========================================================================== */
 
 /* ===========================================================================
    1. DESIGN TOKENS — change the brand here
    ======================================================================== */
 :root {
-  /* --- the one strong accent ------------------------------------------- */
-  --accent:      #FF5A1F;   /* blaze orange */
-  --accent-dark: #C43706;   /* orange dark enough to pass AA as body-sized text */
-  --accent-ink:  #14100D;   /* text placed ON the accent — near-black, 8:1 contrast */
-  --accent-soft: #FFF0E9;   /* faint accent wash */
+  /* --- brand colours, sampled from the logo ----------------------------- */
+  --accent:      #394F9F;   /* logo blue — buttons, chips, progress */
+  --accent-dark: #2C3E80;   /* links and small blue text (9:1 on the page) */
+  --accent-ink:  #FFFFFF;   /* text placed ON the blue (7.5:1) */
+  --accent-soft: #EDF0FA;   /* faint blue wash behind selected cards */
+  --sun:         #F6EA34;   /* logo yellow — shapes and shadows, never text on light */
+  --sun-ink:     #2A1428;   /* text placed ON the yellow */
+  --plum:        #44153E;   /* logo outline — headings, outlines */
+  --btn-hover:   #44153E;   /* primary button on hover */
+  --btn-hover-ink: #FFFFFF;
 
   /* --- neutrals (light mode) -------------------------------------------- */
   --bg:       #FAF7F4;
@@ -54,10 +60,15 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --accent:      #FF7A45;
-    --accent-dark: #FFA070;
-    --accent-ink:  #1A0E07;
-    --accent-soft: #24160F;
+    --accent:      #8FA2EC;   /* the logo blue, lifted so it reads on dark */
+    --accent-dark: #B3C1F4;
+    --accent-ink:  #0D1330;
+    --accent-soft: #1A2142;
+    --sun:         #F6EA34;
+    --sun-ink:     #2A1428;
+    --plum:        #EEF1F5;   /* headings fall back to plain light text */
+    --btn-hover:   #B3C1F4;
+    --btn-hover-ink: #0D1330;
 
     --bg:        #0E1116;
     --surface:   #161B22;
@@ -101,6 +112,7 @@ body {
 }
 
 h1, h2, h3 { font-family: var(--font-head); line-height: 1.35; margin: 0 0 var(--s3); }
+h1, h2 { color: var(--plum); }
 h1 { font-size: clamp(1.75rem, 5.5vw, 2.6rem); font-weight: 700; letter-spacing: -.01em; }
 h2 { font-size: clamp(1.35rem, 4vw, 1.8rem);  font-weight: 700; }
 h3 { font-size: 1.1rem; font-weight: 700; }
@@ -160,14 +172,8 @@ img, svg { max-width: 100%; }
 }
 
 .brand { display: flex; align-items: center; gap: var(--s2); text-decoration: none; color: inherit; min-width: 0; }
-.brand__mark {
-  flex: 0 0 auto; width: 34px; height: 34px; display: grid; place-items: center;
-  background: var(--accent); border-radius: 9px;
-}
-.brand__mark svg { width: 22px; height: 22px; fill: none; stroke: var(--accent-ink); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
-.brand__text { display: flex; flex-direction: column; min-width: 0; }
-.brand__name { font-family: var(--font-head); font-size: 1.05rem; line-height: 1.45; }
-.brand__tag  { color: var(--muted); font-size: .72rem; line-height: 1.3;
+.brand__logo { flex: 0 0 auto; display: block; height: 46px; width: auto; }
+.brand__tag  { color: var(--muted); font-size: .75rem; line-height: 1.35; min-width: 0;
                overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .lang {
@@ -194,27 +200,17 @@ img, svg { max-width: 100%; }
    ======================================================================== */
 .screen { padding-block: var(--s6) var(--s7); }
 
-/* overflow:hidden keeps the bleeding motif from widening the page — the form
-   must never scroll sideways on a phone. */
-.hero { position: relative; overflow: hidden; padding-block-end: var(--s5); }
-.hero__motif {
-  position: absolute; inset-inline: -20%; inset-block-end: 0; height: 180px;
-  pointer-events: none; opacity: .5; z-index: 0;
-}
-.hero__motif svg { width: 100%; height: 100%; fill: none; stroke: var(--accent); stroke-width: 1.5; }
-.hero__motif path:nth-child(2) { opacity: .5; }
-.hero__motif path:nth-child(3) { opacity: .35; }
-.hero__motif path:nth-child(4) { opacity: .2; }
-.hero > :not(.hero__motif) { position: relative; z-index: 1; }
+.hero { padding-block-end: var(--s5); text-align: center; }
+.hero__logo-wrap { width: min(100%, 26rem); margin: 0 auto var(--s4); }
+.hero__logo { display: block; width: 100%; height: auto; }
 
 .hero__title { margin-block-end: var(--s2); }
 .hero__tag {
   display: inline-block; font-weight: 700; color: var(--accent-dark);
-  border-inline-start: 4px solid var(--accent); padding-inline-start: var(--s3);
-  margin-block-end: var(--s4);
+  padding: var(--s1) var(--s4); margin-block-end: var(--s4);
+  background: var(--accent-soft); border-radius: 999px;
 }
-.hero__lead { font-size: 1.125rem; color: var(--ink-soft); }
-.hero__coach { color: var(--muted); font-size: .95rem; }
+.hero__lead { font-size: 1.125rem; color: var(--ink-soft); max-width: 36rem; margin-inline: auto; }
 
 .callout {
   display: flex; gap: var(--s4);
@@ -243,7 +239,7 @@ img, svg { max-width: 100%; }
 .how__num {
   position: absolute; inset-inline-start: var(--s4); inset-block-start: var(--s5);
   width: 32px; height: 32px; display: grid; place-items: center;
-  background: var(--accent); color: var(--accent-ink);
+  background: var(--sun); color: var(--sun-ink); border: 2px solid var(--sun-ink);
   border-radius: 50%; font-weight: 800; font-size: .95rem;
 }
 .how__step h3 { margin-block-end: var(--s1); }
@@ -265,8 +261,15 @@ img, svg { max-width: 100%; }
 .btn:active { transform: translateY(1px); }
 .btn[disabled] { opacity: .6; cursor: progress; }
 
-.btn--primary { background: var(--accent); color: var(--accent-ink); }
-.btn--primary:hover { background: var(--accent-dark); color: #fff; }
+/* The yellow offset shadow echoes the yellow slab behind the logo. */
+.btn--primary {
+  background: var(--accent); color: var(--accent-ink);
+  box-shadow: 4px 4px 0 var(--sun);
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.btn--primary:hover { background: var(--btn-hover); color: var(--btn-hover-ink);
+                      transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--sun); }
+.btn--primary:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--sun); }
 
 .btn--ghost { background: var(--surface); color: var(--ink); border-color: var(--line-2); }
 .btn--ghost:hover { border-color: var(--accent); color: var(--ink); }
@@ -288,7 +291,14 @@ img, svg { max-width: 100%; }
 .progress-wrap { margin-block-end: var(--s5); }
 .progress__label { font-weight: 700; font-size: .9rem; color: var(--muted); margin: 0 0 var(--s2); }
 .progress { height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
-.progress__bar { height: 100%; background: var(--accent); border-radius: 999px; transition: width .35s ease; }
+.progress__bar {
+  height: 100%; border-radius: 999px; transition: width .45s cubic-bezier(.3,.8,.3,1);
+  /* blue bar with a yellow leading edge, on the side it is growing towards */
+  background: linear-gradient(to right, var(--accent) calc(100% - 12px), var(--sun) 0);
+}
+html[dir="rtl"] .progress__bar {
+  background: linear-gradient(to left, var(--accent) calc(100% - 12px), var(--sun) 0);
+}
 
 /* ===========================================================================
    7. STEPS + FIELDS
@@ -421,12 +431,13 @@ html[dir="rtl"] .input--tel { text-align: right; }
   position: absolute; inset-block-start: var(--s4); inset-inline-end: var(--s4);
   width: 24px; height: 24px; border: 2px solid var(--line-2); border-radius: 50%;
 }
-.card__input:checked + .card { border-color: var(--accent); background: var(--accent-soft); }
-.card__input:checked + .card .card__tick { background: var(--accent); border-color: var(--accent); }
+.card__input:checked + .card { border-color: var(--accent); background: var(--accent-soft);
+                               box-shadow: 4px 4px 0 var(--sun); }
+.card__input:checked + .card .card__tick { background: var(--sun); border-color: var(--sun-ink); }
 .card__input:checked + .card .card__tick::after {
-  content: ""; position: absolute; inset-block-start: 6px; inset-inline-start: 5px;
+  content: ""; position: absolute; inset-block-start: 5px; inset-inline-start: 4px;
   width: 10px; height: 5px;
-  border-inline-start: 2.5px solid var(--accent-ink); border-block-end: 2.5px solid var(--accent-ink);
+  border-inline-start: 2.5px solid var(--sun-ink); border-block-end: 2.5px solid var(--sun-ink);
   transform: rotate(-45deg);
 }
 .card__input:focus-visible + .card { outline: 3px solid var(--focus); outline-offset: 2px; }
@@ -507,13 +518,14 @@ html[dir="rtl"] .input--tel { text-align: right; }
    ======================================================================== */
 .screen--done { text-align: center; }
 .done { max-width: 34rem; margin-inline: auto; }
-.done__tick { display: block; width: 72px; height: 72px; margin: 0 auto var(--s4); }
-.done__tick svg { width: 100%; height: 100%; fill: none; stroke: var(--ok); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.done__tick { position: relative; display: block; width: 72px; height: 72px; margin: 0 auto var(--s4); }
+.done__tick svg { width: 100%; height: 100%; overflow: visible; fill: none; stroke: var(--ok); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
 .done__title:focus { outline: none; }
 .done__title:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
 .done__body { color: var(--ink-soft); }
 
 .idcard {
+  box-shadow: 5px 5px 0 var(--sun);
   background: var(--surface); border: 2px dashed var(--accent);
   border-radius: var(--radius); padding: var(--s5); margin-block: var(--s6);
 }
@@ -560,3 +572,121 @@ html[dir="rtl"] .input--tel { text-align: right; }
    12. Before app.js runs, keep the flash of unstyled steps away.
    ====================================================================== */
 html:not(.js-ready) #steps { min-height: 40vh; }
+
+/* ===========================================================================
+   13. WHO IS BEHIND IT
+   ======================================================================== */
+.team { margin-block: var(--s7) var(--s6); }
+.team__h { margin-block-end: var(--s4); }
+.team__grid { display: grid; gap: var(--s5); }
+@media (min-width: 34rem) { .team__grid { grid-template-columns: 1fr 1fr; } }
+
+.team__card {
+  background: var(--surface); border: 2px solid var(--accent);
+  border-radius: var(--radius); padding: var(--s5);
+  box-shadow: 5px 5px 0 var(--sun);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.team__card:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--sun); }
+.team__icon {
+  display: grid; place-items: center; width: 46px; height: 46px;
+  background: var(--accent); border-radius: 12px; margin-block-end: var(--s3);
+}
+.team__icon svg { width: 26px; height: 26px; fill: none; stroke: var(--accent-ink); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.team__role { margin: 0; font-size: .8rem; font-weight: 700; color: var(--accent-dark); letter-spacing: .03em; }
+.team__name { margin: 0 0 var(--s2); font-size: 1.2rem; }
+.team__body { margin: 0; color: var(--ink-soft); font-size: .95rem; }
+
+/* ===========================================================================
+   14. MOTION
+   Everything here is wrapped in prefers-reduced-motion: no-preference, so a
+   visitor who has asked their phone to reduce motion sees a still page with
+   every element already in place.
+   ======================================================================== */
+
+/* Scroll-in reveal. The hidden starting state only applies when the tiny
+   script in <head> has added html.motion. The fallback animation shows the
+   element after 3 s anyway, in case the page's JavaScript never runs. */
+html.motion .reveal:not(.is-in) {
+  opacity: 0; transform: translateY(18px);
+  animation: reveal-fallback 0s linear 3s forwards;
+}
+html.motion .reveal {
+  transition: opacity .6s ease, transform .7s cubic-bezier(.2,.75,.25,1);
+  transition-delay: calc(var(--d, 0) * 90ms);
+}
+@keyframes reveal-fallback { to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: no-preference) {
+
+  /* --- the logo lands, then breathes ------------------------------------ */
+  .hero__logo      { animation: logo-in .9s cubic-bezier(.2,.9,.3,1.25) both; transform-origin: 50% 60%; }
+  .hero__logo-wrap { animation: float 5s ease-in-out 1.2s infinite; }
+  .brand:hover .brand__logo { animation: wiggle .5s ease; }
+
+  @keyframes logo-in {
+    0%   { opacity: 0; transform: scale(.6) rotate(-7deg); }
+    60%  { opacity: 1; transform: scale(1.05) rotate(1.5deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0); }
+  }
+  @keyframes float  { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+  @keyframes wiggle { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-4deg); } 60% { transform: rotate(3deg); } }
+
+  /* --- the start button nudges twice to say "tap me" -------------------- */
+  #btn-start { animation: nudge 1.4s ease-in-out 2.2s 2; }
+  @keyframes nudge { 0%, 100% { transform: none; } 40% { transform: translate(-2px, -3px) scale(1.03); } }
+
+  /* --- each step slides in from the side the reader is moving towards --- */
+  .step.is-entering { animation: step-in .38s cubic-bezier(.25,.8,.3,1) both; }
+  .step.is-entering[data-dir="fwd"]  { --from: 32px; }
+  .step.is-entering[data-dir="back"] { --from: -32px; }
+  html[dir="rtl"] .step.is-entering[data-dir="fwd"]  { --from: -32px; }
+  html[dir="rtl"] .step.is-entering[data-dir="back"] { --from: 32px; }
+  @keyframes step-in { from { opacity: 0; transform: translateX(var(--from, 32px)); } to { opacity: 1; transform: none; } }
+
+  /* --- follow-up questions and notes grow into place -------------------- */
+  .block, #clearance-box, .activity__row, .tip__panel { animation: rise .35s ease-out both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  /* --- choices answer back when tapped ---------------------------------- */
+  .chip__input:checked + .chip,
+  .seg__input:checked + .seg__btn,
+  .scale__input:checked + .scale__btn,
+  .check__input:checked + .check__box,
+  .card__input:checked + .card { animation: pop .28s ease; }
+  .card__input:checked + .card .card__tick { animation: tick-pop .35s cubic-bezier(.3,1.6,.5,1) both; }
+  @keyframes pop      { 0% { transform: scale(1); } 40% { transform: scale(.94); } 75% { transform: scale(1.04); } 100% { transform: scale(1); } }
+  @keyframes tick-pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+  /* --- a field that needs fixing gives a small shake -------------------- */
+  .is-invalid .input, .is-invalid .chips, .is-invalid .seg, .is-invalid .cards { animation: shake .32s ease; }
+  @keyframes shake { 0%, 100% { transform: none; } 25% { transform: translateX(-5px); } 50% { transform: translateX(4px); } 75% { transform: translateX(-2px); } }
+
+  /* --- confirmation: the tick draws itself, the ID card lands ----------- */
+  .done__tick circle, .done__tick path { stroke-dasharray: 1; stroke-dashoffset: 1; }
+  .done__tick circle { animation: draw .55s ease-out .1s forwards; }
+  .done__tick path   { animation: draw .35s ease-out .55s forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .screen--done .done__title, .screen--done .done__body { animation: rise .5s ease-out .5s both; }
+  .idcard { animation: card-in .6s cubic-bezier(.2,.9,.3,1.3) .75s both; }
+  @keyframes card-in { from { opacity: 0; transform: translateY(16px) scale(.94); } to { opacity: 1; transform: none; } }
+}
+
+/* The celebration burst — pieces are added by app.js only when motion is allowed. */
+.burst { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
+.burst__bit {
+  position: absolute; left: 0; top: 0; width: 14px; height: 14px; opacity: 0;
+  animation: burst 1s cubic-bezier(.15,.7,.3,1) both;
+}
+.burst__bit--o    { border: 3px solid var(--c); border-radius: 50%; }
+.burst__bit--dash { width: 16px; height: 4px; background: var(--c); border-radius: 2px; }
+.burst__bit--x::before, .burst__bit--x::after {
+  content: ""; position: absolute; left: 50%; top: 0; width: 3px; height: 100%;
+  margin-left: -1.5px; background: var(--c); border-radius: 2px; transform: rotate(45deg);
+}
+.burst__bit--x::after { transform: rotate(-45deg); }
+@keyframes burst {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(.3); }
+  70%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) rotate(var(--r)) scale(1); }
+}

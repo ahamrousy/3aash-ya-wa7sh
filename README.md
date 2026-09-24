@@ -2,7 +2,8 @@
 
 A bilingual (Arabic RTL / English LTR) intake form for the **عاش يا وحش** initiative.
 Participants fill in six short steps; the submission lands as one row in a Google
-Sheet that only Coach Dr. Ahmed Amrousy can open, and the coach gets an email.
+Sheet that only Dr. Ahmed Amrousy (founder) owns, and he gets an email. Programs
+are designed and followed up by the team's professional coaches.
 
 **Tagline:** ناس مننا مكملة في التغيير للأحسن
 **Instagram:** [@3aashyawa7sh](https://instagram.com/3aashyawa7sh)
@@ -12,14 +13,14 @@ Sheet that only Coach Dr. Ahmed Amrousy can open, and the coach gets an email.
 ## How it is put together
 
 ```
-   Browser (GitHub Pages, static)            Google (private to the coach)
+   Browser (GitHub Pages, static)            Google (private to the founder)
    ┌──────────────────────────────┐          ┌────────────────────────────┐
    │ index.html  · the 6 steps    │  POST    │ Apps Script Web App        │
    │ checkin.html· weekly log     │ ───────► │  · validates everything    │
    │ privacy.html                 │   JSON   │  · makes the AYW-… ID      │
    │ app.js / checkin.js          │ ◄─────── │  · computes BMI + ratio    │
    │ i18n.js  · all the words     │  {ok,id} │  · writes one sheet row    │
-   │ config.js· the endpoint URL  │          │  · emails the coach        │
+   │ config.js· the endpoint URL  │          │  · emails the founder      │
    └──────────────────────────────┘          └────────────────────────────┘
 ```
 
@@ -55,7 +56,7 @@ Sheet that only Coach Dr. Ahmed Amrousy can open, and the coach gets an email.
 
 Do this first: the website has nowhere to send anything until it is done.
 
-1. **Make the sheet.** Go to <https://sheets.new> while signed in as the coach.
+1. **Make the sheet.** Go to <https://sheets.new> while signed in as the founder.
    Name it something like `عاش يا وحش — participants`.
    **Do not share it with anyone.** It stays private; that is the whole promise
    made to participants.
@@ -159,21 +160,45 @@ If you add a key to one language, add it to the other. Anything missing falls
 back to the Arabic text, and a key that does not exist at all shows up on the
 page as its own name — so mistakes are visible rather than silent.
 
+### The logo
+
+The files in `assets/` were cut from the original artwork: the white background
+was removed from the outside only (the white letters inside the blue shape are
+untouched), so the logo sits cleanly on both the light and the dark theme.
+
+| File | Used for |
+|---|---|
+| `assets/logo.png` (960 px wide) | The big logo at the top of the welcome screen |
+| `assets/logo-sm.png` (360 px wide) | The header on every page |
+| `assets/apple-touch-icon.png`, `assets/favicon-64.png` | Browser tab and phone home-screen icons |
+
+To swap the logo, replace these files with new ones of the same names. Keep the
+background transparent.
+
 ### The colours and the look
 
-All of it comes from the top of `styles.css`:
+All of it comes from the top of `styles.css`, and the colours are sampled from
+the logo itself:
 
 ```css
 :root {
-  --accent:     #FF5A1F;   /* the one strong colour */
-  --accent-ink: #14100D;   /* text placed on top of it */
-  --font-head:  "Noto Naskh Arabic", …;
-  --font-body:  "Noto Sans Arabic", …;
+  --accent: #394F9F;   /* logo blue — buttons, chips, progress bar */
+  --sun:    #F6EA34;   /* logo yellow — offset shadows, step numbers */
+  --plum:   #44153E;   /* logo outline — headings */
+  --font-head: "Noto Naskh Arabic", …;
+  --font-body: "Noto Sans Arabic", …;
 }
 ```
 
 Change `--accent` and the buttons, chips, progress bar, cards and highlights all
-follow. There is a second, shorter block further down under
+follow. Never put text in `--sun` yellow on a light background — it cannot be
+read; the yellow is only for shapes and shadows.
+
+### Animation
+
+All movement lives in section 14 of `styles.css`. It is switched off
+automatically for anyone whose phone is set to "reduce motion" — they get the
+same page, perfectly still. To remove one effect, delete its line there. There is a second, shorter block further down under
 `@media (prefers-color-scheme: dark)` for the dark theme — pick a *lighter*
 version of your accent there so it stays readable on a dark background.
 
@@ -238,19 +263,21 @@ Already built and shipped alongside Phase 1:
   displays anything back, so it cannot be used to look anyone up.
 * Entries go to the `Checkins` tab: weight, waist, sessions completed, best
   effort of the week, energy 1–5, notes.
-* The `Dashboard` tab is the coach's view: pick a participant in **B1** and you
+* The `Dashboard` tab is the team's view: pick a participant in **B1** and you
   get start vs. latest weight and waist, the change in each, check-ins logged,
   sessions completed against sessions planned, adherence %, average energy,
   sparklines for each trend, and a weight/waist line chart.
-* There is deliberately **no coach login page** on the public website. The
-  coach's view is the sheet.
+* There is deliberately **no staff login page** on the public website. The
+  team's view is the sheet.
 
 ---
 
 ## Privacy and the law
 
-* Data lives in one private Google Sheet owned by the coach and shared with
-  nobody.
+* Data lives in one private Google Sheet owned by the founder. Only the
+  3aash Ya Wa7sh team — the founder and the coaches working on a participant's
+  program — sees it. If you share the sheet with a coach, the privacy text
+  already says so; if you share it with anyone else, update the privacy text first.
 * It is used only to design a program and follow progress. It is never sold,
   shared or published.
 * Written with Egypt's Personal Data Protection Law No. 151 of 2020 in mind:
@@ -258,7 +285,7 @@ Already built and shipped alongside Phase 1:
   to correction and deletion — the route for that is on `privacy.html`.
 * Under-18s cannot submit without a guardian's name, number and explicit
   consent. The form blocks it and so does the server.
-* BMI and waist-to-height are computed **server-side, for the coach only**. The
+* BMI and waist-to-height are computed **server-side, for the coaching team only**. The
   participant is never shown a score or a label about their body.
 * Personal data never appears in a URL or a query string: everything travels in
   the POST body.
