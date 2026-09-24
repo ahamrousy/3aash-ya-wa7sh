@@ -330,6 +330,19 @@
 
   function clearDraft() { A.store.remove(A.cfg.storageKey); }
 
+  /** True when the draft holds anything the person typed or picked themselves. */
+  function hasRealAnswers() {
+    var defaults = {};
+    eachField(function (f) { if (f.name && f.def !== undefined) defaults[f.name] = f.def; });
+    return Object.keys(state.data).some(function (k) {
+      var v = state.data[k];
+      if (defaults[k] !== undefined && v === defaults[k]) return false;
+      if (v === undefined || v === null || v === '' || v === false) return false;
+      if (Array.isArray(v) && !v.length) return false;
+      return true;
+    });
+  }
+
   /* ===========================================================================
      4. RENDERING
      Every field is rendered once. Conditional fields are rendered too and then
@@ -992,6 +1005,8 @@
      7. NAVIGATION + PROGRESS
      ======================================================================== */
   function showScreen(id) {
+    /* The header hides its own logo on the welcome screen, where the big one is. */
+    document.body.setAttribute('data-screen', id.replace('screen-', ''));
     ['screen-intro', 'screen-form', 'screen-done'].forEach(function (s) {
       var n = document.getElementById(s);
       if (n) n.hidden = (s !== id);
@@ -1341,8 +1356,9 @@
       window.scrollTo({ top: 0 });
     });
 
-    /* Someone who already started goes straight back into the form. */
-    if (hadDraft && Object.keys(state.data).length) {
+    /* Someone who already started goes straight back into the form — but only
+       if they actually answered something, not just because a default was set. */
+    if (hadDraft && hasRealAnswers()) {
       showScreen('screen-form');
       goToStep(state.step, { focus: false, scroll: false });
     } else {

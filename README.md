@@ -145,6 +145,21 @@ the site will stop working until you update `config.js`.
 
 ## Changing things later
 
+### After ANY change to a .css or .js file — bump the version
+
+GitHub Pages tells browsers to keep files for 10 minutes. Without a version
+number, a visitor can get your new page with the old stylesheet, which looks
+broken. So each HTML file loads its CSS and JS like this:
+
+```html
+<link rel="stylesheet" href="styles.css?v=3">
+```
+
+Whenever you change `styles.css`, `config.js`, `i18n.js` or any other `.js`
+file, change that number to the next one (`?v=4`, …) in **all three** HTML
+files — `index.html`, `privacy.html`, `checkin.html`. Find-and-replace
+`?v=3` → `?v=4` does it in one go.
+
 ### The words
 
 **Everything** the visitor reads is in `i18n.js`, as two lists with the same

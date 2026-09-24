@@ -172,12 +172,20 @@ img, svg { max-width: 100%; }
 }
 
 .brand { display: flex; align-items: center; gap: var(--s2); text-decoration: none; color: inherit; min-width: 0; }
-.brand__logo { flex: 0 0 auto; display: block; height: 46px; width: auto; }
+.brand__logo { flex: 0 0 auto; display: block; height: 42px; width: auto; }
+@media (min-width: 48rem) { .brand__logo { height: 48px; } }
 .brand__tag  { color: var(--muted); font-size: .75rem; line-height: 1.35; min-width: 0;
                overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* On a phone there is no room for the tagline beside the logo; cut, it reads badly. */
+@media (max-width: 29.99rem) { .brand__tag { display: none; } }
+
+/* The welcome screen already shows the big logo and the tagline right below the
+   header, so the header does not repeat them there. Every other screen and page
+   keeps the small logo as the way back home. */
+body[data-screen="intro"] .site-header .brand { display: none; }
 
 .lang {
-  flex: 0 0 auto;
+  flex: 0 0 auto; margin-inline-start: auto;   /* stays at the end even when the logo is hidden */
   display: inline-flex; align-items: center; gap: var(--s2);
   min-height: var(--tap); padding-inline: var(--s3);
   background: var(--surface); color: var(--ink);
@@ -201,7 +209,7 @@ img, svg { max-width: 100%; }
 .screen { padding-block: var(--s6) var(--s7); }
 
 .hero { padding-block-end: var(--s5); text-align: center; }
-.hero__logo-wrap { width: min(100%, 26rem); margin: 0 auto var(--s4); }
+.hero__logo-wrap { width: clamp(12.5rem, 58vw, 19rem); margin: 0 auto var(--s4); }  /* ~200px phone → ~300px desktop */
 .hero__logo { display: block; width: 100%; height: auto; }
 
 .hero__title { margin-block-end: var(--s2); }
