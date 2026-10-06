@@ -20,8 +20,19 @@
 
 /* ===========================================================================
    SETTINGS — the only part you normally edit
+   -----------------------------------------------------------------------------
+   Secrets and anything personal live in Script Properties, never in this file
+   (Project Settings → Script properties). This file is public on GitHub.
+
+     COACH_EMAIL       where the "new submission" mail goes (overrides the
+                       placeholder below, so pasting a new Code.gs never
+                       silently switches notifications off)
+     DEFAULT_PASSWORD  the first-login password every new account gets
+     PEPPER            created for you by setup(); never change it afterwards
+     COACH_USERNAME    \  set by the "Set coach password…" menu item
+     COACH_HASH        /
    ======================================================================== */
-var COACH_EMAIL      = 'coach@example.com';  // where the "new submission" mail goes
+var COACH_EMAIL      = 'coach@example.com';  // fallback only — set the COACH_EMAIL property instead
 var SEND_EMAIL       = true;                 // set false to switch notifications off
 var MIN_SECONDS      = 20;                   // must match config.js minSecondsOnPage
 var SHEET_MAIN       = 'Submissions';
@@ -164,26 +175,47 @@ function doGet() {
   return json({ ok: true, service: '3aash-ya-wa7sh', ready: true });
 }
 
+/* Every request is a POST with a JSON body; body.type picks the handler.
+   Later build steps add the account, tracker and coach routes here. */
+var ROUTES = {
+  intake:  handleIntake,
+  checkin: handleCheckin
+};
+
 function doPost(e) {
   try {
     var body = {};
     if (e && e.postData && e.postData.contents) {
-      body = JSON.parse(e.postData.contents);
+      try { body = JSON.parse(e.postData.contents); }
+      catch (parseErr) { return json({ ok: false, error: 'bad_request' }); }
+    }
+    if (!body || typeof body !== 'object') return json({ ok: false, error: 'bad_request' });
+
+    var type  = String(body.type || 'intake');
+    var route = ROUTES.hasOwnProperty(type) ? ROUTES[type] : null;
+    if (!route) return json({ ok: false, error: 'unknown_type' });
+
+    /* The spam gates protect the two public forms only. Account and tracker
+       calls rely on sessions and lockout instead — a 20-second wait would
+       break normal use of the tracker. */
+    if (type === 'intake' || type === 'checkin') {
+      /* --- spam gate 1: the honeypot. A person never sees that field. ---- */
+      if (body.hp && String(body.hp).trim() !== '') {
+        return json({ ok: false, error: 'spam' });
+      }
     }
 
-    /* --- spam gate 1: the honeypot. A person never sees that field. ------ */
-    if (body.hp && String(body.hp).trim() !== '') {
-      return json({ ok: false, error: 'spam' });
+    /* --- spam gate 2: nobody fills six steps in under MIN_SECONDS ---------
+       A check-in sent from inside a signed-in tracker carries a session, and
+       the session is its protection, so only the anonymous forms wait. */
+    if (type === 'intake' || (type === 'checkin' && !body.session)) {
+      var elapsed = Number(body.elapsed_ms || 0);
+      if (!(elapsed >= MIN_SECONDS * 1000)) {
+        return json({ ok: false, error: 'too_fast' });
+      }
     }
 
-    /* --- spam gate 2: nobody fills six steps in under MIN_SECONDS -------- */
-    var elapsed = Number(body.elapsed_ms || 0);
-    if (!(elapsed >= MIN_SECONDS * 1000)) {
-      return json({ ok: false, error: 'too_fast' });
-    }
-
-    if (body.type === 'checkin') return handleCheckin(body);
-    return handleIntake(body);
+    return route(body);
 
   } catch (err) {
     log_('doPost failed: ' + err + '\n' + (err && err.stack));
@@ -409,8 +441,15 @@ function highestSequenceInSheet_(year) {
 /* ===========================================================================
    THE EMAIL TO THE COACH
    ======================================================================== */
+/** The notification address: the COACH_EMAIL Script Property wins over the file. */
+function coachEmail_() {
+  var fromProps = PropertiesService.getScriptProperties().getProperty('COACH_EMAIL');
+  return String(fromProps || COACH_EMAIL || '').trim();
+}
+
 function notifyCoach_(row, clearance, isMinor) {
-  if (!SEND_EMAIL || !COACH_EMAIL || COACH_EMAIL === 'coach@example.com') return;
+  var to = coachEmail_();
+  if (!SEND_EMAIL || !to || to === 'coach@example.com') return;
   try {
     var flags = [];
     if (clearance) flags.push('⚠ NEEDS MEDICAL CLEARANCE');
@@ -454,7 +493,7 @@ function notifyCoach_(row, clearance, isMinor) {
     lines.push('', 'Open the sheet: ' + url);
 
     MailApp.sendEmail({
-      to: COACH_EMAIL,
+      to: to,
       subject: (clearance ? '[clearance] ' : '') + 'عاش يا وحش — ' + row.participant_id + ' — ' + row.name,
       body: lines.join('\n')
     });
@@ -487,8 +526,9 @@ function coerce_(raw, spec) {
     }
 
     case 'phone': {
-      /* "+20 1012345678" → kept as text, digits only after the country code. */
-      var m = /^(\+\d{1,4})\s*(\d{6,14})$/.exec(clean_(s, 24));
+      /* "+20 1012345678" → kept as text, digits only after the country code.
+         Digits typed on an Arabic keyboard (٠–٩) are turned into 0–9 first. */
+      var m = /^(\+\d{1,4})\s*(\d{6,14})$/.exec(clean_(toAsciiDigits_(s), 24));
       if (!m) return '';
       if (m[1] === '+20' && !/^1[0125]\d{8}$/.test(m[2])) return '';
       return m[1] + ' ' + m[2];
@@ -649,11 +689,19 @@ function setup() {
 
   buildDashboard_();
 
+  /* Phase 3: the account, program and log tabs, plus the pepper. */
+  var secrets = initSecrets_();
+  Object.keys(TABS).forEach(function (name) { ensureTab_(name, true); });
+  protectUsersTab_();
+
   /* Tidy up the default "Sheet1" if it is still there and empty. */
   var stray = ss.getSheetByName('Sheet1');
   if (stray && stray.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(stray);
 
-  SpreadsheetApp.getActiveSpreadsheet().toast('Set-up finished. You can deploy the Web App now.', '3aash Ya Wa7sh', 8);
+  var msg = 'Set-up finished.' + (secrets.length ? ' ' + secrets.join(' ') : '');
+  log_(msg);
+  SpreadsheetApp.getActiveSpreadsheet().toast(msg, '3aash Ya Wa7sh', 12);
+  return msg;
 }
 
 /** A menu so the coach never has to open the script editor again. */
@@ -663,11 +711,18 @@ function onOpen() {
     .addItem('Set up / repair this sheet', 'setup')
     .addItem('Rebuild the dashboard', 'buildDashboard_')
     .addItem('Send me a test email', 'sendTestEmail')
+    .addSeparator()
+    .addItem('Set coach password…', 'setCoachPasswordFromMenu')
+    .addItem('Create accounts for existing participants', 'migrateExistingParticipants')
+    .addItem('Create test participant (AYW-9999-0001)', 'createTestParticipant')
+    .addItem('Delete test participant', 'deleteTestParticipant')
+    .addItem('Delete a participant (deletion request)…', 'deleteParticipantFromMenu')
+    .addItem('Time the password hashing', 'benchmarkHashing')
     .addToUi();
 }
 
 function sendTestEmail() {
-  MailApp.sendEmail(COACH_EMAIL, 'عاش يا وحش — test', 'If you are reading this, notifications work.');
+  MailApp.sendEmail(coachEmail_(), 'عاش يا وحش — test', 'If you are reading this, notifications work.');
 }
 
 function getSheet_(name, headers) {
@@ -739,7 +794,7 @@ function buildDashboard_() {
 
   sh.getRange('A1').setValue('Participant ID').setFontWeight('bold');
   sh.getRange('B1').setValue('');
-  sh.getRange('A1:B1').setBackground('#FF5A1F').setFontColor('#14100D');
+  sh.getRange('A1:B1').setBackground('#394F9F').setFontColor('#FFFFFF');   // brand blue
 
   var idRange = ss.getSheetByName(SHEET_MAIN).getRange(2, HEADERS.indexOf('participant_id') + 1, 5000, 1);
   sh.getRange('B1').setDataValidation(
@@ -795,7 +850,7 @@ function buildDashboard_() {
     .setOption('title', 'Weight and waist over time')
     .setOption('width', 620)
     .setOption('height', 360)
-    .setOption('colors', ['#FF5A1F', '#0F7B60'])
+    .setOption('colors', ['#394F9F', '#0F7B60'])
     .setOption('legend', { position: 'bottom' })
     .build();
   sh.insertChart(chart);
@@ -814,4 +869,680 @@ function colLetter_(index) {
     index = Math.floor((index - 1) / 26);
   }
   return s;
+}
+
+
+/* ###########################################################################
+   PHASE 3 — ACCOUNTS, SESSIONS, PROGRAMS
+   ###########################################################################
+   Everything below backs the participant login, the program tracker and the
+   coach console. Passwords and session tokens are never stored: only salted,
+   iterated hashes. The default first-login password lives in the
+   DEFAULT_PASSWORD Script Property, never in this file.
+   ######################################################################## */
+
+var SHEET_USERS         = 'Users';
+var SHEET_SESSIONS      = 'Sessions';
+var SHEET_RESETS        = 'ResetTokens';
+var SHEET_PLANS         = 'Plans';
+var SHEET_PLAN_SESSIONS = 'PlanSessions';
+var SHEET_LOGS          = 'SessionLogs';
+var SHEET_AUTHLOG       = 'AuthLog';
+
+/* Column order of every new tab, left to right (spec section 5). */
+var TABS = {
+  Users: {
+    headers: ['participant_id', 'username', 'name', 'role', 'status', 'pw_algo', 'pw_iter', 'pw_salt',
+              'pw_hash', 'must_change_password', 'created_at', 'initial_expires_at', 'password_changed_at',
+              'failed_count', 'locked_until', 'last_login_at'],
+    numeric: { pw_iter: true, failed_count: true }
+  },
+  Sessions: {
+    headers: ['token_hash', 'participant_id', 'role', 'scope', 'created_at', 'expires_at', 'last_seen_at', 'revoked'],
+    numeric: {}
+  },
+  ResetTokens: {
+    headers: ['token_hash', 'participant_id', 'created_by', 'created_at', 'expires_at', 'used_at'],
+    numeric: {}
+  },
+  Plans: {
+    headers: ['plan_id', 'participant_id', 'version', 'title', 'start_date', 'weeks', 'status', 'coach_note',
+              'created_at', 'published_at', 'clearance_confirmed'],
+    numeric: { version: true, weeks: true }
+  },
+  PlanSessions: {
+    headers: ['plan_id', 'participant_id', 'session_id', 'week', 'day', 'date', 'order', 'title', 'type', 'details',
+              'target_duration_min', 'target_distance_km', 'target_intensity', 'target_reps'],
+    numeric: { week: true, day: true, order: true, target_duration_min: true, target_distance_km: true }
+  },
+  SessionLogs: {
+    headers: ['log_id', 'participant_id', 'plan_id', 'session_id', 'status', 'actual_duration_min',
+              'actual_distance_km', 'effort_1_10', 'note', 'logged_at', 'updated_at'],
+    numeric: { actual_duration_min: true, actual_distance_km: true, effort_1_10: true }
+  },
+  AuthLog: {
+    headers: ['timestamp', 'username', 'event', 'result', 'detail'],
+    numeric: {}
+  }
+};
+
+/* Security settings. Raising PW_ITERATIONS later is safe: each user row keeps
+   the count it was hashed with, and the new count applies to new passwords. */
+var AUTH = {
+  PW_ALGO:                 'sha256-iter-v1',
+  PW_ITERATIONS:           5000,
+  PARTICIPANT_SESSION_DAYS: 30,
+  COACH_SESSION_HOURS:     12,
+  INITIAL_PASSWORD_DAYS:   14,
+  RESET_HOURS:             48,
+  LOCK_AFTER:              5,      // consecutive failures → 15-minute lock
+  LOCK_MINUTES:            15,
+  HARD_LOCK_PER_DAY:       20,     // failures in one day → locked until the coach unlocks
+  SESSION_CACHE_SECONDS:   600,
+  SESSION_REFRESH_MINUTES: 60      // a session's expiry slides forward at most once an hour
+};
+var HARD_LOCK_UNTIL = '9999-12-31T00:00:00.000Z';
+var COACH_PID       = 'COACH';
+var TEST_PID        = 'AYW-9999-0001';
+var TEST_USERNAME   = '+201099999999';
+
+
+/* ===========================================================================
+   SMALL HELPERS
+   ======================================================================== */
+function prop_(key) { return PropertiesService.getScriptProperties().getProperty(key); }
+function nowIso_() { return new Date().toISOString(); }
+function isoIn_(ms) { return new Date(Date.now() + ms).toISOString(); }
+function isTrue_(v) { return v === true || String(v).toUpperCase() === 'TRUE'; }
+function timeOf_(iso) { var t = Date.parse(String(iso || '')); return isFinite(t) ? t : 0; }
+
+/** Digits typed on an Arabic (٠–٩) or Persian (۰–۹) keyboard become 0–9. */
+function toAsciiDigits_(s) {
+  return String(s == null ? '' : s)
+    .replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 0x0660); })
+    .replace(/[۰-۹]/g, function (d) { return String(d.charCodeAt(0) - 0x06F0); });
+}
+
+/**
+ * The one shared phone normaliser (common.js has the same rules).
+ * Returns the username form "+201001240186", or '' if it is not a valid number.
+ *   01001240186 · +20 01001240186 · ٠١٠٠١٢٤٠١٨٦ · 0020 100 124 0186 → +201001240186
+ *   +966 5XXXXXXXX → +9665XXXXXXXX (other countries keep their own code)
+ */
+function normalisePhone_(raw) {
+  var s = toAsciiDigits_(raw).replace(/[\s\-().‎‏‪-‮]/g, '');
+  if (/^00/.test(s)) s = '+' + s.slice(2);
+  if (/^0\d{10}$/.test(s)) s = '+20' + s.slice(1);          // local Egyptian number with its 0
+  else if (/^1[0125]\d{8}$/.test(s)) s = '+20' + s;          // Egyptian number typed without 0 or code
+  if (!/^\+\d+$/.test(s)) return '';
+  if (s.indexOf('+20') === 0) {
+    var national = s.slice(3).replace(/^0/, '');
+    return /^1[0125]\d{8}$/.test(national) ? '+20' + national : '';
+  }
+  var len = s.length - 1;
+  return (len >= 8 && len <= 15) ? s : '';
+}
+
+
+/* ===========================================================================
+   HASHING
+   Apps Script has no crypto RNG, but Utilities.getUuid() is a random (v4)
+   UUID backed by Java's SecureRandom; hashing several of them gives the
+   random bytes used for salts and tokens.
+   ======================================================================== */
+function bytes_(s) { return Utilities.newBlob(String(s)).getBytes(); }
+function sha256_(byteArr) { return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, byteArr); }
+function hex_(byteArr) {
+  return byteArr.map(function (b) {
+    var v = (b < 0 ? b + 256 : b).toString(16);
+    return v.length < 2 ? '0' + v : v;
+  }).join('');
+}
+function sha256Hex_(s) { return hex_(sha256_(bytes_(s))); }
+
+function randomBytes_(n) {
+  var out = [];
+  while (out.length < n) {
+    out = out.concat(sha256_(bytes_(Utilities.getUuid() + Utilities.getUuid() + Date.now() + out.length)));
+  }
+  return out.slice(0, n);
+}
+function randomToken_() { return hex_(randomBytes_(32)); }       // 32 random bytes → 64 hex characters
+
+function pepper_() {
+  var p = prop_('PEPPER');
+  if (!p) throw new Error('The PEPPER script property is missing — run setup() first.');
+  return p;
+}
+
+/** salt(16 bytes) + pepper + password, then SHA-256 repeated `iterations` times. */
+function hashPassword_(password, saltB64, iterations) {
+  var salt = Utilities.base64Decode(saltB64);
+  var h = sha256_(salt.concat(bytes_(pepper_())).concat(bytes_(password)));
+  for (var i = 1; i < iterations; i++) h = sha256_(h.concat(salt));
+  return Utilities.base64Encode(h);
+}
+
+function makePasswordRecord_(password) {
+  var salt = Utilities.base64Encode(randomBytes_(16));
+  return { algo: AUTH.PW_ALGO, iter: AUTH.PW_ITERATIONS, salt: salt,
+           hash: hashPassword_(password, salt, AUTH.PW_ITERATIONS) };
+}
+
+function checkPassword_(password, rec) {
+  if (!rec || rec.algo !== AUTH.PW_ALGO || !rec.salt || !rec.hash) return false;
+  return safeEqual_(hashPassword_(String(password), rec.salt, Number(rec.iter) || AUTH.PW_ITERATIONS), rec.hash);
+}
+
+/** Compares in time that does not depend on where the strings differ. */
+function safeEqual_(a, b) {
+  a = String(a); b = String(b);
+  var diff = a.length ^ b.length;
+  var n = Math.max(a.length, b.length);
+  for (var i = 0; i < n; i++) diff |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
+  return diff === 0;
+}
+
+/**
+ * Why a new password is not acceptable, or '' if it is fine. Same rules as
+ * the browser: 8–64 characters, English letters, numbers and symbols only
+ * (no Arabic, no spaces), not the default password, not the phone number.
+ */
+function passwordProblem_(pw, username) {
+  pw = String(pw == null ? '' : pw);
+  if (pw.length < 8)  return 'pw_too_short';
+  if (pw.length > 64) return 'pw_too_long';
+  if (!/^[\x21-\x7E]+$/.test(pw)) return 'pw_ascii_only';
+  var dflt = prop_('DEFAULT_PASSWORD');
+  if (dflt && pw === dflt) return 'pw_is_default';
+  var d = digits_(username);
+  if (d.length >= 8 && pw.indexOf(d.slice(-8)) !== -1) return 'pw_has_phone';
+  return '';
+}
+
+
+/* ===========================================================================
+   TABS — read, write and update rows by column name
+   ======================================================================== */
+var tabCache_ = {};
+
+/** Get a Phase-3 tab, creating and formatting it (plain text) if it is new. */
+function ensureTab_(name, reformat) {
+  if (tabCache_[name] && !reformat) return tabCache_[name];
+  var def = TABS[name];
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(name);
+  var isNew = !sh;
+  if (isNew) sh = ss.insertSheet(name);
+  if (isNew || sh.getLastRow() === 0 || reformat) {
+    /* Text format matters: without it Sheets would turn "+201001240186" into a number. */
+    formatSheet_(sh, def.headers, def.numeric);
+  }
+  tabCache_[name] = sh;
+  return sh;
+}
+
+function readRows_(name) {
+  var def = TABS[name];
+  var sh = ensureTab_(name);
+  var last = sh.getLastRow();
+  if (last < 2) return [];
+  var vals = sh.getRange(2, 1, last - 1, def.headers.length).getValues();
+  return vals.map(function (r, i) {
+    var o = { _row: i + 2 };
+    def.headers.forEach(function (h, j) { o[h] = r[j]; });
+    return o;
+  });
+}
+
+function writeRow_(name, obj) {
+  appendRow_(ensureTab_(name), TABS[name].headers, obj, TABS[name].numeric);
+}
+
+function updateRow_(name, rowNum, patch) {
+  var def = TABS[name];
+  var sh = ensureTab_(name);
+  var current = sh.getRange(rowNum, 1, 1, def.headers.length).getValues()[0];
+  var vals = def.headers.map(function (h, j) {
+    if (!patch.hasOwnProperty(h)) return current[j];
+    var v = patch[h];
+    if (v === null || v === undefined) return '';
+    if (def.numeric[h]) return v === '' ? '' : Number(v);
+    return String(v);
+  });
+  sh.getRange(rowNum, 1, 1, vals.length).setValues([vals]);
+}
+
+/** Delete, bottom-up, every row whose value in `column` passes `test`. */
+function deleteRowsWhere_(sheet, headers, column, test) {
+  if (!sheet) return 0;
+  var col = headers.indexOf(column) + 1;
+  var last = sheet.getLastRow();
+  if (col < 1 || last < 2) return 0;
+  var vals = sheet.getRange(2, col, last - 1, 1).getValues();
+  var n = 0;
+  for (var i = vals.length - 1; i >= 0; i--) {
+    if (test(vals[i][0])) { sheet.deleteRow(i + 2); n++; }
+  }
+  return n;
+}
+
+function findUser_(field, value) {
+  var rows = readRows_(SHEET_USERS);
+  for (var i = 0; i < rows.length; i++) {
+    if (String(rows[i][field]) === String(value)) return rows[i];
+  }
+  return null;
+}
+
+/** The Users tab holds password hashes: editor-only, hash columns hidden. */
+function protectUsersTab_() {
+  var sh = ensureTab_(SHEET_USERS);
+  try {
+    var existing = sh.getProtections(SpreadsheetApp.ProtectionType.SHEET);
+    var p = existing.length ? existing[0] : sh.protect();
+    p.setDescription('Accounts — editor only. Never share this sheet.');
+    p.removeEditors(p.getEditors());
+    if (p.canDomainEdit()) p.setDomainEdit(false);
+  } catch (e) { log_('Could not protect Users: ' + e); }
+  var h = TABS.Users.headers;
+  sh.hideColumns(h.indexOf('pw_salt') + 1, 2);           // pw_salt and pw_hash
+}
+
+
+/* ===========================================================================
+   SECRETS
+   ======================================================================== */
+/** Creates PEPPER once if it is missing, and reports what still needs setting. */
+function initSecrets_() {
+  var props = PropertiesService.getScriptProperties();
+  var notes = [];
+  if (!props.getProperty('PEPPER')) {
+    props.setProperty('PEPPER', Utilities.base64Encode(randomBytes_(32)));
+    notes.push('A PEPPER was created in Script Properties — never change or delete it.');
+  }
+  if (!props.getProperty('DEFAULT_PASSWORD')) {
+    notes.push('Set the DEFAULT_PASSWORD script property before creating accounts.');
+  }
+  if (!props.getProperty('COACH_EMAIL') && (!COACH_EMAIL || COACH_EMAIL === 'coach@example.com')) {
+    notes.push('Set the COACH_EMAIL script property to get submission emails.');
+  }
+  if (!props.getProperty('COACH_HASH')) {
+    notes.push('Use the menu "Set coach password…" to create the coach login.');
+  }
+  return notes;
+}
+
+
+/* ===========================================================================
+   ACCOUNTS
+   ======================================================================== */
+/** New participant account with the default password, which must be changed. */
+function createAccount_(pid, username, name) {
+  var dflt = prop_('DEFAULT_PASSWORD');
+  if (!dflt) throw new Error('The DEFAULT_PASSWORD script property is missing.');
+  var rec = makePasswordRecord_(dflt);
+  writeRow_(SHEET_USERS, {
+    participant_id: pid, username: username, name: clean_(name, 80),
+    role: 'participant', status: 'awaiting_plan',
+    pw_algo: rec.algo, pw_iter: rec.iter, pw_salt: rec.salt, pw_hash: rec.hash,
+    must_change_password: 'TRUE',
+    created_at: nowIso_(),
+    initial_expires_at: isoIn_(AUTH.INITIAL_PASSWORD_DAYS * 864e5),
+    password_changed_at: '', failed_count: 0, locked_until: '', last_login_at: ''
+  });
+}
+
+function passwordRecordOf_(user) {
+  return { algo: String(user.pw_algo), iter: Number(user.pw_iter), salt: String(user.pw_salt), hash: String(user.pw_hash) };
+}
+
+/** True while the default password can still be used on this account. */
+function defaultPasswordActive_(user) {
+  return isTrue_(user.must_change_password) && timeOf_(user.initial_expires_at) > Date.now();
+}
+
+
+/* ===========================================================================
+   SESSIONS
+   Only the SHA-256 of a token is stored. Valid sessions are cached for 10
+   minutes; revoking one removes it from the cache at once.
+   ======================================================================== */
+function sessionTtlMs_(role) {
+  return role === 'coach' ? AUTH.COACH_SESSION_HOURS * 36e5 : AUTH.PARTICIPANT_SESSION_DAYS * 864e5;
+}
+
+function cacheSession_(hash, s) {
+  try { CacheService.getScriptCache().put('sess_' + hash, JSON.stringify(s), AUTH.SESSION_CACHE_SECONDS); }
+  catch (e) { /* the sheet is the source of truth */ }
+}
+
+/** Issue a session. scope is 'full' or 'change_password_only'. Caller holds the lock. */
+function createSession_(pid, role, scope) {
+  var token = randomToken_();
+  var hash = sha256Hex_(token);
+  var now = nowIso_();
+  var exp = isoIn_(sessionTtlMs_(role));
+  writeRow_(SHEET_SESSIONS, {
+    token_hash: hash, participant_id: pid, role: role, scope: scope,
+    created_at: now, expires_at: exp, last_seen_at: now, revoked: 'FALSE'
+  });
+  cacheSession_(hash, { pid: pid, role: role, scope: scope, exp: exp, seen: now });
+  return { token: token, expires_at: exp };
+}
+
+/** Look a token up. Returns {pid, role, scope, exp, hash} or null. */
+function resolveSession_(token) {
+  token = String(token || '');
+  if (!/^[0-9a-f]{64}$/.test(token)) return null;
+  var hash = sha256Hex_(token);
+  var cache = CacheService.getScriptCache();
+  var hit = cache.get('sess_' + hash);
+  var s = hit ? JSON.parse(hit) : null;
+
+  if (!s) {
+    var rows = readRows_(SHEET_SESSIONS);
+    for (var i = 0; i < rows.length; i++) {
+      if (String(rows[i].token_hash) !== hash) continue;
+      if (isTrue_(rows[i].revoked)) return null;
+      s = { pid: String(rows[i].participant_id), role: String(rows[i].role), scope: String(rows[i].scope),
+            exp: String(rows[i].expires_at), seen: String(rows[i].last_seen_at) };
+      break;
+    }
+    if (!s) return null;
+  }
+  if (timeOf_(s.exp) <= Date.now()) return null;
+
+  /* Sliding expiry, written at most once an hour so reads stay fast. */
+  if (Date.now() - timeOf_(s.seen) > AUTH.SESSION_REFRESH_MINUTES * 6e4) {
+    var lock = LockService.getScriptLock();
+    if (lock.tryLock(2000)) {
+      try {
+        var all = readRows_(SHEET_SESSIONS);
+        for (var j = 0; j < all.length; j++) {
+          if (String(all[j].token_hash) === hash) {
+            if (isTrue_(all[j].revoked)) return null;
+            s.seen = nowIso_();
+            s.exp = isoIn_(sessionTtlMs_(s.role));
+            updateRow_(SHEET_SESSIONS, all[j]._row, { last_seen_at: s.seen, expires_at: s.exp });
+            break;
+          }
+        }
+      } finally { lock.releaseLock(); }
+    }
+  }
+  cacheSession_(hash, s);
+  s.hash = hash;
+  return s;
+}
+
+/** Revoke one session by its hash. Caller holds the lock. */
+function revokeSession_(hash) {
+  var rows = readRows_(SHEET_SESSIONS);
+  for (var i = 0; i < rows.length; i++) {
+    if (String(rows[i].token_hash) === hash) { updateRow_(SHEET_SESSIONS, rows[i]._row, { revoked: 'TRUE' }); break; }
+  }
+  try { CacheService.getScriptCache().remove('sess_' + hash); } catch (e) { /* nothing cached */ }
+}
+
+/** Revoke every session of a participant except one (or all). Caller holds the lock. */
+function revokeAllSessions_(pid, exceptHash) {
+  var keys = [];
+  readRows_(SHEET_SESSIONS).forEach(function (r) {
+    if (String(r.participant_id) !== pid || String(r.token_hash) === exceptHash) return;
+    keys.push('sess_' + r.token_hash);
+    if (!isTrue_(r.revoked)) updateRow_(SHEET_SESSIONS, r._row, { revoked: 'TRUE' });
+  });
+  if (keys.length) { try { CacheService.getScriptCache().removeAll(keys); } catch (e) { /* nothing cached */ } }
+  return keys.length;
+}
+
+
+/* ===========================================================================
+   LOCKOUT + AUTH LOG
+   ======================================================================== */
+/** One line per auth event. Never passwords, never tokens. */
+function logAuth_(username, event, result, detail) {
+  try {
+    writeRow_(SHEET_AUTHLOG, {
+      timestamp: new Date(), username: clean_(username, 40), event: event, result: result,
+      detail: clean_(detail || '', 200)
+    });
+  } catch (e) { log_('AuthLog write failed: ' + e); }
+}
+
+function isLocked_(user) {
+  return !!user && timeOf_(user.locked_until) > Date.now();
+}
+
+/** Count a failed login. Caller holds the lock. */
+function registerFailure_(user, username) {
+  var day = Utilities.formatDate(new Date(), 'Africa/Cairo', 'yyyyMMdd');
+  var key = 'faild_' + sha256Hex_(username).slice(0, 20) + '_' + day;
+  var cache = CacheService.getScriptCache();
+  var today = Number(cache.get(key) || 0) + 1;
+  try { cache.put(key, String(today), 90000); } catch (e) { /* best effort */ }
+
+  logAuth_(username, 'login', 'fail', user ? 'bad password' : 'unknown username');
+  if (!user) return;
+
+  var count = Number(user.failed_count || 0) + 1;
+  var patch = { failed_count: count };
+  if (today >= AUTH.HARD_LOCK_PER_DAY) {
+    patch.locked_until = HARD_LOCK_UNTIL;
+    logAuth_(username, 'lockout', 'until_unlock', today + ' failures today');
+  } else if (count % AUTH.LOCK_AFTER === 0) {
+    patch.locked_until = isoIn_(AUTH.LOCK_MINUTES * 6e4);
+    logAuth_(username, 'lockout', AUTH.LOCK_MINUTES + 'min', count + ' failures in a row');
+  }
+  updateRow_(SHEET_USERS, user._row, patch);
+}
+
+/** A successful login clears the failure count. Caller holds the lock. */
+function registerSuccess_(user) {
+  updateRow_(SHEET_USERS, user._row, { failed_count: 0, locked_until: '', last_login_at: nowIso_() });
+}
+
+
+/* ===========================================================================
+   COACH ACCOUNT — username and hash live in Script Properties only
+   ======================================================================== */
+function setCoachPassword(password, username) {
+  initSecrets_();
+  var problem = passwordProblem_(password, '');
+  if (problem) throw new Error('Password not accepted (' + problem + '): 8–64 characters, English letters, numbers and symbols only.');
+  username = clean_(username || prop_('COACH_USERNAME') || coachEmail_(), 120).toLowerCase();
+  if (!username || username === 'coach@example.com') throw new Error('Give a coach username (your email).');
+  var props = PropertiesService.getScriptProperties();
+  props.setProperty('COACH_USERNAME', username);
+  props.setProperty('COACH_HASH', JSON.stringify(makePasswordRecord_(password)));
+  logAuth_(username, 'change_password', 'ok', 'coach password set');
+  return 'Coach login saved for ' + username + '.';
+}
+
+/** Menu version: asks for the username and password in two dialogs. */
+function setCoachPasswordFromMenu() {
+  var ui = SpreadsheetApp.getUi();
+  var u = ui.prompt('Coach login (1 of 2)', 'Your coach username — your email address:', ui.ButtonSet.OK_CANCEL);
+  if (u.getSelectedButton() !== ui.Button.OK) return;
+  var p = ui.prompt('Coach login (2 of 2)',
+    'Your coach password: 8–64 characters, English letters, numbers and symbols.\n' +
+    'It is visible while you type, so make sure nobody is watching your screen.', ui.ButtonSet.OK_CANCEL);
+  if (p.getSelectedButton() !== ui.Button.OK) return;
+  try { ui.alert(setCoachPassword(p.getResponseText(), u.getResponseText())); }
+  catch (e) { ui.alert(String(e.message || e)); }
+}
+
+
+/* ===========================================================================
+   ONE-OFF HELPERS — run from the editor or the sheet menu
+   ======================================================================== */
+/**
+ * Give every existing participant an account with the default password and a
+ * fresh 14-day window. Safe to run twice. Duplicate or invalid phone numbers
+ * are skipped and listed in the execution log for you to sort out by hand.
+ */
+function migrateExistingParticipants() {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    initSecrets_();
+    if (!prop_('DEFAULT_PASSWORD')) throw new Error('Set the DEFAULT_PASSWORD script property first.');
+
+    var haveUser = {}, havePid = {};
+    readRows_(SHEET_USERS).forEach(function (u) {
+      haveUser[String(u.username)] = String(u.participant_id);
+      havePid[String(u.participant_id)] = true;
+    });
+
+    var sub = getSheet_(SHEET_MAIN, HEADERS);
+    var last = sub.getLastRow();
+    var rows = last < 2 ? [] : sub.getRange(2, 1, last - 1, HEADERS.length).getValues();
+    var iPid = HEADERS.indexOf('participant_id'), iPhone = HEADERS.indexOf('whatsapp'), iName = HEADERS.indexOf('name');
+
+    var todo = [];
+    rows.forEach(function (r) {
+      var pid = String(r[iPid] || '').trim();
+      if (!pid || havePid[pid]) return;
+      todo.push({ pid: pid, raw: String(r[iPhone]), username: normalisePhone_(r[iPhone]), name: String(r[iName]) });
+    });
+
+    var count = {};
+    todo.forEach(function (t) { if (t.username) count[t.username] = (count[t.username] || 0) + 1; });
+
+    var created = [], skipped = [];
+    todo.forEach(function (t) {
+      if (!t.username) { skipped.push(t.pid + ': phone "' + t.raw + '" is not a valid number'); return; }
+      if (haveUser[t.username]) { skipped.push(t.pid + ': ' + t.username + ' already belongs to ' + haveUser[t.username]); return; }
+      if (count[t.username] > 1) { skipped.push(t.pid + ': ' + t.username + ' is used by more than one submission'); return; }
+      createAccount_(t.pid, t.username, t.name);
+      haveUser[t.username] = t.pid;
+      created.push(t.pid + ' → ' + t.username);
+    });
+
+    var report = 'Accounts created: ' + created.length + (created.length ? '\n  ' + created.join('\n  ') : '') +
+                 '\nSkipped: ' + skipped.length + (skipped.length ? '\n  ' + skipped.join('\n  ') : '');
+    log_(report);
+    try { SpreadsheetApp.getActiveSpreadsheet().toast('Created ' + created.length + ', skipped ' + skipped.length +
+          ' — see Executions for details.', '3aash Ya Wa7sh', 10); } catch (e) { /* run from the editor */ }
+    return report;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** A throw-away participant (AYW-9999-0001) for testing every flow. */
+function createTestParticipant() {
+  deleteParticipant(TEST_PID);
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    initSecrets_();
+    var clash = findUser_('username', TEST_USERNAME);
+    if (clash) throw new Error(TEST_USERNAME + ' already belongs to ' + clash.participant_id + '.');
+
+    var row = {};
+    HEADERS.forEach(function (h) { row[h] = ''; });
+    row.timestamp = new Date();
+    row.participant_id = TEST_PID;
+    row.name = 'حساب تجريبي — Test';
+    row.whatsapp = '+20 ' + TEST_USERNAME.slice(3);
+    row.city = 'Test';
+    row.contact_pref = 'whatsapp';
+    row.objectives = 'sport';
+    row.new_sport = 'running'; row.new_sport_target = '5k'; row.experience = 'little';
+    row.age = 30; row.is_minor = 'FALSE'; row.gender = 'male';
+    row.weight_kg = 80; row.height_cm = 175; row.waist_cm = 90;
+    row.bmi = round_(80 / (1.75 * 1.75), 1); row.waist_to_height = round_(90 / 175, 2);
+    row.current_sports = 'walking'; row.days_per_week = 3; row.preferred_days = 'sat,mon,wed';
+    row.hours_per_session = 60; row.time_of_day = 'morning'; row.facilities = 'road';
+    PARQ_KEYS.forEach(function (k) { row[k] = k === 'parq_pregnant' ? '' : 'no'; });
+    row.needs_medical_clearance = 'FALSE';
+    row.consent_accuracy = 'TRUE'; row.consent_data = 'TRUE'; row.consent_media = 'FALSE';
+    row.language_used = 'ar'; row.status = 'New'; row.submission_token = 'test-participant';
+    appendRow_(getSheet_(SHEET_MAIN, HEADERS), HEADERS, row, NUMERIC_COLUMNS);
+
+    createAccount_(TEST_PID, TEST_USERNAME, row.name);
+    var msg = 'Test participant ' + TEST_PID + ' created. Username ' + TEST_USERNAME +
+              ', password = the DEFAULT_PASSWORD script property.';
+    log_(msg);
+    try { SpreadsheetApp.getActiveSpreadsheet().toast(msg, '3aash Ya Wa7sh', 10); } catch (e) { /* editor */ }
+    return msg;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function deleteTestParticipant() { return deleteParticipant(TEST_PID); }
+
+/** Menu version for deletion requests: asks for the ID, then asks again to confirm. */
+function deleteParticipantFromMenu() {
+  var ui = SpreadsheetApp.getUi();
+  var r = ui.prompt('Delete a participant', 'Participant ID to delete everywhere (e.g. AYW-2026-0001):', ui.ButtonSet.OK_CANCEL);
+  if (r.getSelectedButton() !== ui.Button.OK) return;
+  var pid = String(r.getResponseText() || '').trim().toUpperCase();
+  var sure = ui.alert('Delete ' + pid + '?', 'This removes the person from every tab and cannot be undone.', ui.ButtonSet.YES_NO);
+  if (sure !== ui.Button.YES) return;
+  try { ui.alert(deleteParticipant(pid)); } catch (e) { ui.alert(String(e.message || e)); }
+}
+
+/**
+ * Remove a person from every tab — for deletion requests under Law 151/2020.
+ * Their account, sessions, reset links, program, logs, check-ins and auth log
+ * lines all go. Cannot be undone.
+ */
+function deleteParticipant(pid) {
+  pid = String(pid || '').trim().toUpperCase();
+  if (!/^AYW-\d{4}-\d{4}$/.test(pid)) throw new Error('Not a participant ID: "' + pid + '"');
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var user = ss.getSheetByName(SHEET_USERS) ? findUser_('participant_id', pid) : null;
+
+    /* Drop any cached sessions first, so a deleted person is signed out at once. */
+    if (ss.getSheetByName(SHEET_SESSIONS)) {
+      var keys = readRows_(SHEET_SESSIONS)
+        .filter(function (r) { return String(r.participant_id) === pid; })
+        .map(function (r) { return 'sess_' + r.token_hash; });
+      if (keys.length) { try { CacheService.getScriptCache().removeAll(keys); } catch (e) { /* none cached */ } }
+    }
+
+    var isPid = function (v) { return String(v).trim().toUpperCase() === pid; };
+    var removed = {};
+    removed[SHEET_MAIN] = deleteRowsWhere_(ss.getSheetByName(SHEET_MAIN), HEADERS, 'participant_id', isPid);
+    removed[SHEET_CHECKINS] = deleteRowsWhere_(ss.getSheetByName(SHEET_CHECKINS), CHECKIN_HEADERS, 'participant_id', isPid);
+    [SHEET_USERS, SHEET_SESSIONS, SHEET_RESETS, SHEET_PLANS, SHEET_PLAN_SESSIONS, SHEET_LOGS].forEach(function (name) {
+      removed[name] = deleteRowsWhere_(ss.getSheetByName(name), TABS[name].headers, 'participant_id', isPid);
+    });
+    if (user) {
+      removed[SHEET_AUTHLOG] = deleteRowsWhere_(ss.getSheetByName(SHEET_AUTHLOG), TABS.AuthLog.headers, 'username',
+        function (v) { return String(v) === String(user.username); });
+    }
+    tabCache_ = {};
+
+    var parts = Object.keys(removed).filter(function (k) { return removed[k]; })
+      .map(function (k) { return k + ' ' + removed[k]; });
+    var msg = pid + ' deleted' + (parts.length ? ': ' + parts.join(', ') : ' (nothing found)') + '.';
+    log_(msg);
+    return msg;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** How long one password hash takes here — the target is a login under 3 s. */
+function benchmarkHashing() {
+  initSecrets_();
+  var t0 = Date.now();
+  var rec = makePasswordRecord_('Benchmark#2026');
+  var t1 = Date.now();
+  var ok = checkPassword_('Benchmark#2026', rec);
+  var t2 = Date.now();
+  var msg = 'Hashing with ' + AUTH.PW_ITERATIONS + ' iterations: create ' + (t1 - t0) + ' ms, check ' +
+            (t2 - t1) + ' ms (' + (ok ? 'match' : 'NO MATCH — something is wrong') + ').';
+  log_(msg);
+  try { SpreadsheetApp.getActiveSpreadsheet().toast(msg, '3aash Ya Wa7sh', 15); } catch (e) { /* editor */ }
+  return msg;
 }
