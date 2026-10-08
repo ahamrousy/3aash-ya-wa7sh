@@ -22,26 +22,43 @@ function proxyBuilder(build) {
   return p;
 }
 
+/* Like Sheets: a leading apostrophe forces text and is dropped; anything else
+   starting with = or + becomes a formula. "+20 1012345678" is a broken formula
+   (#ERROR!); "+201012345678" evaluates to a number. Formulas are kept as {f, v}. */
+function parseInput(v) {
+  if (typeof v !== 'string') return v;
+  if (v[0] === "'") return v.slice(1);
+  if (v[0] === '=' || v[0] === '+') {
+    const f = v[0] === '=' ? v : '=' + v;
+    const m = /^=\+(\d+)$/.exec(f);
+    return { f, v: m ? Number(m[1]) : '#ERROR!' };
+  }
+  return v;
+}
+const valueOf = (cell) => (cell && typeof cell === 'object' && 'f' in cell ? cell.v : cell);
+
 function makeSheet(name) {
   const rows = [];
   const state = { name, rows, hidden: [], protections: [] };
   const range = (r, c, nr, nc) => {
+    const grid = (pick) => {
+      const out = [];
+      for (let i = 0; i < nr; i++) {
+        const row = rows[r - 1 + i] || [];
+        const line = [];
+        for (let j = 0; j < nc; j++) line.push(pick(row[c - 1 + j]));
+        out.push(line);
+      }
+      return out;
+    };
     const api = {
-      getValues() {
-        const out = [];
-        for (let i = 0; i < nr; i++) {
-          const row = rows[r - 1 + i] || [];
-          const line = [];
-          for (let j = 0; j < nc; j++) line.push(row[c - 1 + j] === undefined ? '' : row[c - 1 + j]);
-          out.push(line);
-        }
-        return out;
-      },
+      getValues: () => grid((x) => (x === undefined ? '' : valueOf(x))),
+      getFormulas: () => grid((x) => (x && typeof x === 'object' && 'f' in x ? x.f : '')),
       setValues(vals) {
         vals.forEach((line, i) => {
           const ri = r - 1 + i;
           rows[ri] = rows[ri] || [];
-          line.forEach((v, j) => { rows[ri][c - 1 + j] = v; });
+          line.forEach((v, j) => { rows[ri][c - 1 + j] = parseInput(v); });
         });
         return api;
       },
@@ -58,7 +75,7 @@ function makeSheet(name) {
     getLastRow: () => rows.length,
     getMaxRows: () => Math.max(rows.length, 1000),
     getRange: (...a) => (typeof a[0] === 'string' ? range(1, 1, 1, 1) : range(a[0], a[1], a[2] || 1, a[3] || 1)),
-    appendRow: (vals) => { rows.push(vals.slice()); },
+    appendRow: (vals) => { rows.push(vals.map(parseInput)); },
     deleteRow: (i) => { rows.splice(i - 1, 1); },
     setFrozenRows() {}, setRowHeight() {}, autoResizeColumns() {},
     getColumnWidth: () => 100, setColumnWidth() {},
@@ -161,7 +178,7 @@ function table(S, name) {
   const sh = S.__state.sheets[name];
   if (!sh) return [];
   const [head, ...rest] = sh._state.rows;
-  return rest.map((r) => Object.fromEntries(head.map((h, i) => [h, r[i]])));
+  return rest.map((r) => Object.fromEntries(head.map((h, i) => [h, valueOf(r[i])])));
 }
 
 module.exports = { load, post, table, CODE };

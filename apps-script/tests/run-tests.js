@@ -213,7 +213,8 @@ section('8. Accounts');
   check('default password checks out against the stored hash', S.checkPassword_('Default#0000', S.passwordRecordOf_(u)));
   check('default password window is 14 days',
     Math.abs((Date.parse(u.initial_expires_at) - Date.now()) / 864e5 - 14) < 0.01 && S.defaultPasswordActive_(u));
-  check('name passes through the formula guard', String(u.name).charAt(0) === "'", u.name);
+  const nameCell = S.__state.sheets.Users._state.rows[u._row - 1][S.TABS.Users.headers.indexOf('name')];
+  check('a name that looks like a formula is stored as plain text', typeof nameCell === 'string' && nameCell.charAt(0) === '=', nameCell);
   check('the default password is not stored in plain text', !JSON.stringify(S.__state.sheets.Users._state.rows).includes('Default#0000'));
   const N = load();
   N.initSecrets_();
@@ -306,6 +307,45 @@ section('11. setup() and the coach account');
   check('coach username and hash saved in Script Properties', p.COACH_USERNAME === 'me@x.com' && S.checkPassword_('Coach#Strong1', rec));
   check('coach password is not stored in plain text', !JSON.stringify(p).includes('Coach#Strong1'));
   check('Dashboard uses the brand blue, not the old orange', !fs.readFileSync(CODE, 'utf8').includes('#FF5A1F'));
+}
+
+/* --------------------------------------------- "+20 …" saved as #ERROR! */
+section('12. Phone numbers that Sheets turned into #ERROR!');
+{
+  const S = load({ props: PROPS });
+  const id = post(S, ADULT).participant_id;
+  const sub = table(S, 'Submissions').find((r) => r.participant_id === id);
+  check('a new submission keeps its phone as text', sub.whatsapp === '+20 1012345678', sub.whatsapp);
+
+  /* the rows already in the live sheet: written without the apostrophe */
+  const rows = S.__state.sheets.Submissions._state.rows;
+  const iPhone = S.HEADERS.indexOf('whatsapp');
+  const old = rows[1].slice();
+  old[S.HEADERS.indexOf('participant_id')] = 'AYW-2026-0002';
+  old[S.HEADERS.indexOf('submission_token')] = 'legacy';
+  old[iPhone] = { f: '=+20 1033333333', v: '#ERROR!' };
+  rows.push(old);
+  check('the legacy row reads as #ERROR! (as in the screenshot)',
+    table(S, 'Submissions').find((r) => r.participant_id === 'AYW-2026-0002').whatsapp === '#ERROR!');
+
+  const msg = S.setup();
+  check('setup repairs it back to text', table(S, 'Submissions').find((r) => r.participant_id === 'AYW-2026-0002').whatsapp === '+20 1033333333');
+  check('setup says how many cells it repaired', /Repaired 1 phone/.test(msg), msg);
+  check('a second setup finds nothing to repair', !/Repaired/.test(S.setup()));
+
+  rows[rows.length - 1][iPhone] = { f: '=+20 1033333333', v: '#ERROR!' };
+  const rep = S.migrateExistingParticipants();
+  check('migration repairs #ERROR! phones itself and creates both accounts', /Accounts created: 2/.test(rep), rep);
+  check('username saved as text, not as a number',
+    table(S, 'Users').every((u) => typeof u.username === 'string' && u.username[0] === '+'), table(S, 'Users').map((u) => u.username));
+
+  S.createTestParticipant();
+  check('test participant username stays "+201099999999"',
+    table(S, 'Users').find((u) => u.participant_id === 'AYW-9999-0001').username === '+201099999999');
+
+  const u = S.findUser_('participant_id', id);
+  S.updateRow_('Users', u._row, { status: 'active' });
+  check('updating another column keeps the username as text', S.findUser_('participant_id', id).username === '+201012345678');
 }
 
 console.log('\n================  ' + pass + ' passed, ' + fail + ' failed  ================\n');

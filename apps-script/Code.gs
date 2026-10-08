@@ -668,9 +668,46 @@ function appendRow_(sheet, headers, obj, numericMap) {
     if (v === undefined || v === null) return '';
     if (h === 'timestamp') return v;
     if (numericMap && numericMap[h]) return v === '' ? '' : Number(v);
-    return String(v);
+    return asCell_(String(v));
   });
   sheet.appendRow(values);
+}
+
+/**
+ * Sheets reads "+20 1001240186" as a broken formula (#ERROR!) and
+ * "+201001240186" as a number, even in a plain-text column. A leading
+ * apostrophe makes it keep the text exactly as written.
+ */
+function asCell_(v) {
+  return (typeof v === 'string' && /^[=+\-@]/.test(v)) ? "'" + v : v;
+}
+
+/** The text a cell holds, without an apostrophe that Sheets chose to keep. */
+function fromCell_(v) {
+  return (typeof v === 'string' && /^'[=+\-@]/.test(v)) ? v.slice(1) : v;
+}
+
+/**
+ * Rows written before asCell_ existed hold "=+20 1001240186" as a formula
+ * that shows #ERROR!. Turn every such cell back into the text it was.
+ * Returns how many cells were repaired.
+ */
+function repairPlusCells_(sheet, headers, numericMap) {
+  if (!sheet || sheet.getLastRow() < 2) return 0;
+  var n = 0;
+  var rows = sheet.getLastRow() - 1;
+  headers.forEach(function (h, i) {
+    if (h === 'timestamp' || (numericMap && numericMap[h])) return;
+    var range = sheet.getRange(2, i + 1, rows, 1);
+    var formulas = range.getFormulas();
+    formulas.forEach(function (f, r) {
+      var m = /^=?\s*(\+[\d\s]+)$/.exec(String(f[0] || ''));
+      if (!m) return;
+      sheet.getRange(r + 2, i + 1).setValue("'" + m[1].trim());
+      n++;
+    });
+  });
+  return n;
 }
 
 
@@ -687,6 +724,10 @@ function setup() {
   var checks = getSheet_(SHEET_CHECKINS, CHECKIN_HEADERS);
   formatSheet_(checks, CHECKIN_HEADERS, CHECKIN_NUMERIC);
 
+  /* Phone numbers saved as broken formulas (#ERROR!) become text again. */
+  var repaired = repairPlusCells_(main, HEADERS, NUMERIC_COLUMNS) +
+                 repairPlusCells_(checks, CHECKIN_HEADERS, CHECKIN_NUMERIC);
+
   buildDashboard_();
 
   /* Phase 3: the account, program and log tabs, plus the pepper. */
@@ -698,7 +739,8 @@ function setup() {
   var stray = ss.getSheetByName('Sheet1');
   if (stray && stray.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(stray);
 
-  var msg = 'Set-up finished.' + (secrets.length ? ' ' + secrets.join(' ') : '');
+  var msg = 'Set-up finished.' + (repaired ? ' Repaired ' + repaired + ' phone cells that showed #ERROR!.' : '') +
+            (secrets.length ? ' ' + secrets.join(' ') : '');
   log_(msg);
   SpreadsheetApp.getActiveSpreadsheet().toast(msg, '3aash Ya Wa7sh', 12);
   return msg;
@@ -1090,7 +1132,7 @@ function readRows_(name) {
   var vals = sh.getRange(2, 1, last - 1, def.headers.length).getValues();
   return vals.map(function (r, i) {
     var o = { _row: i + 2 };
-    def.headers.forEach(function (h, j) { o[h] = r[j]; });
+    def.headers.forEach(function (h, j) { o[h] = fromCell_(r[j]); });
     return o;
   });
 }
@@ -1104,11 +1146,11 @@ function updateRow_(name, rowNum, patch) {
   var sh = ensureTab_(name);
   var current = sh.getRange(rowNum, 1, 1, def.headers.length).getValues()[0];
   var vals = def.headers.map(function (h, j) {
-    if (!patch.hasOwnProperty(h)) return current[j];
+    if (!patch.hasOwnProperty(h)) return asCell_(fromCell_(current[j]));
     var v = patch[h];
     if (v === null || v === undefined) return '';
     if (def.numeric[h]) return v === '' ? '' : Number(v);
-    return String(v);
+    return asCell_(String(v));
   });
   sh.getRange(rowNum, 1, 1, vals.length).setValues([vals]);
 }
@@ -1396,6 +1438,7 @@ function migrateExistingParticipants() {
     });
 
     var sub = getSheet_(SHEET_MAIN, HEADERS);
+    repairPlusCells_(sub, HEADERS, NUMERIC_COLUMNS);
     var last = sub.getLastRow();
     var rows = last < 2 ? [] : sub.getRange(2, 1, last - 1, HEADERS.length).getValues();
     var iPid = HEADERS.indexOf('participant_id'), iPhone = HEADERS.indexOf('whatsapp'), iName = HEADERS.indexOf('name');
@@ -1404,7 +1447,8 @@ function migrateExistingParticipants() {
     rows.forEach(function (r) {
       var pid = String(r[iPid] || '').trim();
       if (!pid || havePid[pid]) return;
-      todo.push({ pid: pid, raw: String(r[iPhone]), username: normalisePhone_(r[iPhone]), name: String(r[iName]) });
+      var phone = fromCell_(String(r[iPhone]));
+      todo.push({ pid: pid, raw: phone, username: normalisePhone_(phone), name: fromCell_(String(r[iName])) });
     });
 
     var count = {};
