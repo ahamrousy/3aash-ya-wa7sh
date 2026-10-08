@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-i18n-doc="co.doc">لوحة المدرب — عاش يا وحش</title>
+<meta name="description" content="لوحة المدرب">
+<meta name="theme-color" content="#394F9F">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="styles.css?v=4">
+<script>try{if(matchMedia('(prefers-reduced-motion: no-preference)').matches)document.documentElement.classList.add('motion')}catch(e){}</script>
+<link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+</head>
+<body>
+
+<a class="skip" href="#main" data-i18n="skip.link">تخطَّ للمحتوى</a>
+
+<header class="site-header">
+  <div class="wrap site-header__in">
+    <a class="brand" href="index.html">
+      <img class="brand__logo" src="assets/logo-sm.png" width="360" height="207"
+           alt="عاش يا وحش" data-i18n-alt="brand.name">
+      <small class="brand__tag" data-i18n="brand.tagline">ناس مننا مكملة في التغيير للأحسن</small>
+    </a>
+    <button type="button" class="hdr-link" id="c-logout" hidden data-i18n="trk.logout">خروج</button>
+    <button type="button" class="lang" data-lang-toggle data-i18n-aria="lang.switch.aria">
+      <svg class="lang__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>
+      </svg>
+      <span data-i18n="lang.switch">English</span>
+    </button>
+  </div>
+</header>
+
+<main id="main" class="wrap wrap--wide coach">
+
+  <!-- ================= Login ================= -->
+  <section id="c-login" class="auth" hidden>
+    <h1 data-i18n="co.login.title">لوحة المدرب</h1>
+    <form id="c-login-form" class="form-card" novalidate>
+      <div class="field" data-field="c-user">
+        <label class="field__label" for="c-user" data-i18n="co.login.user"></label>
+        <input class="input" id="c-user" type="email" dir="ltr" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="120" aria-describedby="e-c-user">
+        <p class="field__err" id="e-c-user" role="alert"></p>
+      </div>
+      <div class="field" data-field="c-pw">
+        <label class="field__label" for="c-pw" data-i18n="login.pw.label"></label>
+        <div class="pw">
+          <input class="input" id="c-pw" type="password" dir="ltr" autocomplete="current-password" autocapitalize="off" spellcheck="false" maxlength="64" aria-describedby="e-c-pw">
+          <button type="button" class="pw__toggle" data-pw-toggle="c-pw" aria-pressed="false"></button>
+        </div>
+        <p class="field__err" id="e-c-pw" role="alert"></p>
+      </div>
+      <div id="c-login-error" class="callout callout--error" hidden role="alert"><p id="c-login-error-body"></p></div>
+      <button type="submit" id="c-login-submit" class="btn btn--primary btn--lg" data-i18n="login.submit"></button>
+    </form>
+  </section>
+
+  <!-- ================= Participant list ================= -->
+  <section id="c-list" hidden>
+    <div class="c-bar">
+      <h1 class="c-bar__h" data-i18n="co.list.title">المشاركين</h1>
+      <button type="button" class="btn btn--ghost btn--sm" id="c-refresh" data-i18n="co.refresh"></button>
+    </div>
+    <div class="c-tools">
+      <label class="sr-only" for="c-search" data-i18n="co.search"></label>
+      <input class="input" id="c-search" type="search" data-i18n-ph="co.search" autocomplete="off">
+      <label class="sr-only" for="c-filter" data-i18n="co.filter"></label>
+      <select class="input" id="c-filter">
+        <option value="" data-i18n="co.filter.all"></option>
+        <option value="awaiting_plan" data-i18n="co.st.awaiting_plan"></option>
+        <option value="active" data-i18n="co.st.active"></option>
+        <option value="paused" data-i18n="co.st.paused"></option>
+        <option value="completed" data-i18n="co.st.completed"></option>
+        <option value="no_account" data-i18n="co.st.no_account"></option>
+      </select>
+    </div>
+    <p id="c-list-msg" class="note" role="status" hidden></p>
+    <ul id="c-rows" class="c-rows"></ul>
+  </section>
+
+  <!-- ================= One participant ================= -->
+  <section id="c-detail" hidden>
+    <p><button type="button" class="btn btn--link" id="c-back" data-i18n="co.back"></button></p>
+
+    <header class="c-head">
+      <div>
+        <h1 id="c-name" class="c-head__name" tabindex="-1"></h1>
+        <p class="c-head__meta"><span id="c-id" dir="ltr"></span> · <span id="c-user-line" dir="ltr"></span></p>
+        <p id="c-badges" class="c-badges"></p>
+      </div>
+      <div class="c-actions">
+        <label class="c-actions__status">
+          <span data-i18n="co.status"></span>
+          <select class="input" id="c-status">
+            <option value="awaiting_plan" data-i18n="co.st.awaiting_plan"></option>
+            <option value="active" data-i18n="co.st.active"></option>
+            <option value="paused" data-i18n="co.st.paused"></option>
+            <option value="completed" data-i18n="co.st.completed"></option>
+          </select>
+        </label>
+        <button type="button" class="btn btn--ghost btn--sm" id="c-unlock" hidden data-i18n="co.unlock"></button>
+        <button type="button" class="btn btn--ghost btn--sm" id="c-reset" data-i18n="co.reset"></button>
+        <a class="btn btn--ghost btn--sm" id="c-wa-welcome" target="_blank" rel="noopener" hidden data-i18n="co.wa.welcome.btn"></a>
+        <a class="btn btn--ghost btn--sm" id="c-wa-chat" target="_blank" rel="noopener" data-i18n="co.wa.chat"></a>
+      </div>
+    </header>
+
+    <p id="c-detail-msg" class="note" role="status" hidden></p>
+
+    <!-- reset link: Copy first, WhatsApp second -->
+    <div id="c-reset-box" class="callout callout--coach" hidden>
+      <div class="c-reset">
+        <p class="callout__title" data-i18n="co.reset.title"></p>
+        <label class="sr-only" for="c-reset-url" data-i18n="co.reset.title"></label>
+        <input class="input" id="c-reset-url" readonly dir="ltr">
+        <p class="note" id="c-reset-exp"></p>
+        <div class="c-row">
+          <button type="button" class="btn btn--primary btn--sm" id="c-reset-copy" data-i18n="co.copy"></button>
+          <a class="btn btn--ghost btn--sm" id="c-reset-wa" target="_blank" rel="noopener" data-i18n="co.reset.wa"></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="c-grid">
+      <div class="c-main">
+        <!-- program -->
+        <section class="c-card" aria-labelledby="c-prog-h">
+          <h2 id="c-prog-h" data-i18n="co.prog.title"></h2>
+          <p id="c-prog-none" class="note" data-i18n="co.prog.none" hidden></p>
+          <div id="c-prog"></div>
+          <div id="c-log-detail" class="c-logdetail" hidden role="status"></div>
+          <div id="c-earlier" hidden>
+            <h3 data-i18n="co.prog.earlier"></h3>
+            <ul id="c-earlier-list" class="c-list"></ul>
+          </div>
+          <div id="c-versions-box" hidden>
+            <h3 data-i18n="co.prog.versions"></h3>
+            <ul id="c-versions" class="c-list"></ul>
+          </div>
+        </section>
+
+        <!-- import a plan -->
+        <section class="c-card" aria-labelledby="c-imp-h">
+          <h2 id="c-imp-h" data-i18n="co.imp.title"></h2>
+          <p class="note" data-i18n="co.imp.how"></p>
+          <p class="c-row">
+            <button type="button" class="btn btn--ghost btn--sm" id="c-brief" data-i18n="co.imp.brief"></button>
+            <span id="c-brief-msg" class="c-hint" role="status"></span>
+          </p>
+          <label class="field__label" for="c-json" data-i18n="co.imp.paste"></label>
+          <textarea class="input input--area c-json" id="c-json" dir="ltr" spellcheck="false" autocapitalize="off" rows="12"></textarea>
+          <p class="c-row">
+            <button type="button" class="btn btn--primary btn--sm" id="c-validate" data-i18n="co.imp.validate"></button>
+          </p>
+          <div id="c-errors" class="callout callout--error" hidden role="alert">
+            <div>
+              <p class="callout__title" data-i18n="co.imp.errors"></p>
+              <ul id="c-errors-list" class="c-errlist"></ul>
+            </div>
+          </div>
+          <div id="c-preview-box" hidden>
+            <h3 data-i18n="co.imp.preview"></h3>
+            <p class="note" data-i18n="co.imp.preview.note"></p>
+            <div class="c-preview">
+              <p id="c-preview-title" class="trk__title"></p>
+              <p id="c-preview-note" class="note"></p>
+              <div id="c-preview"></div>
+            </div>
+            <div id="c-clear-box" class="callout callout--care" hidden>
+              <label class="check">
+                <input type="checkbox" class="check__input" id="c-clear">
+                <span class="check__box" aria-hidden="true"></span>
+                <span class="check__text" data-i18n="co.imp.clearance"></span>
+              </label>
+            </div>
+            <p class="c-row">
+              <button type="button" class="btn btn--primary" id="c-publish" data-i18n="co.imp.publish"></button>
+            </p>
+          </div>
+          <div id="c-published" class="callout callout--ok" hidden role="status">
+            <p id="c-published-msg"></p>
+            <p><a class="btn btn--primary btn--sm" id="c-notify" target="_blank" rel="noopener" data-i18n="co.imp.notify"></a></p>
+          </div>
+        </section>
+      </div>
+
+      <div class="c-side">
+        <!-- coach notes -->
+        <section class="c-card" aria-labelledby="c-notes-h">
+          <h2 id="c-notes-h" data-i18n="co.notes.title"></h2>
+          <label class="sr-only" for="c-notes" data-i18n="co.notes.title"></label>
+          <textarea class="input input--area" id="c-notes" rows="4" maxlength="2000"></textarea>
+          <p class="c-row">
+            <button type="button" class="btn btn--ghost btn--sm" id="c-notes-save" data-i18n="co.notes.save"></button>
+            <span id="c-notes-msg" class="c-hint" role="status"></span>
+          </p>
+        </section>
+
+        <!-- check-ins -->
+        <section class="c-card" aria-labelledby="c-ci-h">
+          <h2 id="c-ci-h" data-i18n="co.ci.title"></h2>
+          <div id="c-trend" class="trend"></div>
+          <p id="c-ci-none" class="note" data-i18n="co.ci.none" hidden></p>
+          <div class="c-tablewrap"><table id="c-ci-table" class="c-table" hidden>
+            <thead><tr>
+              <th data-i18n="co.ci.date"></th><th data-i18n="co.ci.weight"></th><th data-i18n="co.ci.waist"></th>
+              <th data-i18n="co.ci.sessions"></th><th data-i18n="co.ci.energy"></th><th data-i18n="co.ci.notes"></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </section>
+
+        <!-- account -->
+        <section class="c-card" aria-labelledby="c-acc-h">
+          <h2 id="c-acc-h" data-i18n="co.acc.title"></h2>
+          <dl id="c-acc" class="c-dl"></dl>
+        </section>
+
+        <!-- intake -->
+        <section class="c-card" aria-labelledby="c-intake-h">
+          <h2 id="c-intake-h" data-i18n="co.intake.title"></h2>
+          <div id="c-intake"></div>
+        </section>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="site-footer__note" data-i18n="footer.made"></p>
+    <p class="site-footer__rights">© <span id="year"></span> <span data-i18n="footer.rights"></span></p>
+  </div>
+</footer>
+
+<script src="config.js?v=4"></script>
+<script src="i18n.js?v=4"></script>
+<script src="common.js?v=4"></script>
+<script src="plan-view.js?v=4"></script>
+<script src="coach.js?v=4"></script>
+</body>
+</html>

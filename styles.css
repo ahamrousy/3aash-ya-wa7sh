@@ -883,6 +883,102 @@ html[dir="rtl"] .trend__svg { transform: scaleX(-1); }      /* time runs right-t
 }
 .toast .btn--link { color: var(--sun); min-height: 36px; }
 
+/* ===========================================================================
+   17. COACH CONSOLE
+   ======================================================================== */
+.wrap--wide { max-width: 76rem; }
+.coach { padding-block: var(--s5) var(--s7); }
+.coach .auth { margin-inline: auto; }
+
+.c-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+.c-bar__h { margin: 0; }
+.c-tools { display: grid; gap: var(--s2); margin-block: var(--s4); }
+@media (min-width: 40rem) { .c-tools { grid-template-columns: 1fr 14rem; } }
+
+.c-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+.c-rowbtn {
+  width: 100%; display: grid; gap: var(--s2); text-align: start; font: inherit; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: var(--s3) var(--s4); cursor: pointer;
+}
+.c-rowbtn:hover { border-color: var(--accent); }
+@media (min-width: 52rem) { .c-rowbtn { grid-template-columns: 1fr 1.6fr; align-items: center; } }
+.c-rowbtn__main { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
+.c-rowbtn__name { font-weight: 800; }
+.c-rowbtn__id { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85rem; color: var(--muted); }
+.c-rowbtn__meta { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); font-size: .85rem; color: var(--ink-soft); align-items: center; }
+
+.st { font-weight: 800; font-size: .78rem; border-radius: 999px; padding: 1px var(--s2); background: var(--surface-2); color: var(--ink); }
+.st--awaiting_plan { background: var(--sun); color: var(--sun-ink); }
+.st--active { background: var(--ok); color: var(--surface); }
+.st--paused { background: var(--care-bg); color: var(--care); }
+.st--no_account { background: var(--danger-bg); color: var(--danger); }
+
+.c-badges { display: inline-flex; flex-wrap: wrap; gap: var(--s1); margin: 0; }
+.badge { font-size: .72rem; font-weight: 800; border-radius: 6px; padding: 1px 6px; border: 1.5px solid currentColor; }
+.badge--red { color: var(--danger); background: var(--danger-bg); }
+.badge--amber { color: var(--care); background: var(--care-bg); }
+.badge--blue { color: var(--accent-dark); background: var(--accent-soft); }
+.badge--dark { color: var(--surface); background: var(--ink); border-color: var(--ink); }
+
+.c-head { display: grid; gap: var(--s4); margin-block-end: var(--s4); }
+@media (min-width: 52rem) { .c-head { grid-template-columns: 1fr auto; align-items: start; } }
+.c-head__name { margin: 0; }
+.c-head__name:focus { outline: none; }
+.c-head__meta { color: var(--muted); margin: 0 0 var(--s2); font-size: .9rem; }
+.c-actions { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: end; }
+.c-actions__status { display: grid; gap: 2px; font-size: .8rem; color: var(--muted); }
+.c-actions__status .input { min-height: 38px; padding-block: var(--s1); width: auto; }
+
+.c-reset { display: grid; gap: var(--s2); width: 100%; }
+.c-reset .input { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85rem; }
+.c-row { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
+.c-hint { color: var(--muted); font-size: .85rem; }
+
+.c-grid { display: grid; gap: var(--s4); }
+@media (min-width: 60rem) { .c-grid { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); align-items: start; } }
+.c-main, .c-side { display: grid; gap: var(--s4); min-width: 0; }
+.c-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--s4) var(--s5); min-width: 0; }
+.c-card h2 { font-size: 1.2rem; }
+.c-card h3 { font-size: 1rem; margin-block-start: var(--s4); }
+.c-statline { font-size: .88rem; color: var(--ink-soft); }
+
+/* Program grid: one row per week, one square per session. */
+.pgrid { display: grid; gap: var(--s1); }
+.pgrid__row { display: grid; grid-template-columns: 5.5rem 1fr; gap: var(--s2); align-items: center; }
+.pgrid__wk { font-size: .82rem; font-weight: 700; color: var(--muted); }
+.pgrid__cells { display: flex; flex-wrap: wrap; gap: 4px; }
+.pcell {
+  min-width: 40px; min-height: 36px; padding: 0 6px; border-radius: 8px; cursor: pointer;
+  font: inherit; font-size: .75rem; font-weight: 800; direction: ltr;
+  border: 2px solid var(--line-2); background: var(--surface); color: var(--ink);
+}
+.pcell--done    { background: var(--ok); border-color: var(--ok); color: var(--surface); }
+.pcell--partial { background: var(--care-bg); border-color: var(--care); color: var(--care); }
+.pcell--skipped { background: var(--surface-2); border-color: var(--ink-soft); color: var(--ink-soft); text-decoration: line-through; }
+.pcell--rest    { border-style: dashed; color: var(--muted); }
+.c-logdetail { margin-block-start: var(--s3); background: var(--surface-2); border-radius: var(--radius-sm); padding: var(--s3) var(--s4); font-size: .92rem; }
+.c-logdetail__h { font-weight: 800; }
+.c-logdetail__st { font-weight: 700; color: var(--accent-dark); }
+.c-list { margin: 0; padding-inline-start: var(--s5); font-size: .9rem; }
+
+.c-json { min-height: 14rem; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .82rem; line-height: 1.5; direction: ltr; text-align: left; }
+.c-errlist { margin: 0; padding-inline-start: var(--s5); font-size: .9rem; display: grid; gap: var(--s1); }
+.c-preview { border: 2px dashed var(--accent); border-radius: var(--radius); padding: var(--s4); margin-block: var(--s3); background: var(--bg); }
+
+.c-tablewrap { overflow-x: auto; }
+.c-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.c-table th, .c-table td { text-align: start; padding: var(--s1) var(--s2); border-block-end: 1px solid var(--line); vertical-align: top; }
+.c-table th { color: var(--muted); font-weight: 700; white-space: nowrap; }
+
+.c-group { border-block-start: 1px solid var(--line); padding-block: var(--s2); }
+.c-group summary { cursor: pointer; font-weight: 800; min-height: var(--tap); display: flex; align-items: center; }
+.c-dl { margin: 0; display: grid; gap: var(--s1); }
+.c-dl__row { display: grid; grid-template-columns: minmax(7rem, 40%) 1fr; gap: var(--s2); font-size: .88rem; padding-block: 2px; }
+.c-dl dt { color: var(--muted); }
+.c-dl dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.c-dl__row.is-warn dd { color: var(--danger); }
+
 /* The celebration burst — pieces are added by app.js only when motion is allowed. */
 .burst { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
 .burst__bit {

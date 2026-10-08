@@ -507,8 +507,11 @@ section('17. Tracker: me');
   const nb = member(B, '1033333333');
   handPlan(B, nb.pid, '');
   const pb = post(B, { type: 'me', session: nb.session }).plan;
-  check('no start date: day 1 is a Saturday on or before today',
-    new Date(pb.start + 'T00:00:00Z').getUTCDay() === 6 && B.dayNum_(pb.start) <= B.dayNum_(B.cairoDay_()) && B.dayNum_(B.cairoDay_()) - B.dayNum_(pb.start) < 7, pb.start);
+  check('no start date: day 1 is the first Saturday on or after publishing',
+    new Date(pb.start + 'T00:00:00Z').getUTCDay() === 6 && B.dayNum_(pb.start) >= B.dayNum_(B.cairoDay_()) && B.dayNum_(pb.start) - B.dayNum_(B.cairoDay_()) < 7, pb.start);
+  const st = post(B, { type: 'me', session: nb.session }).stats;
+  check('…so nothing is "due" yet on publish day (unless it is a Saturday)',
+    st.planned_to_date === (pb.start === B.cairoDay_() ? 1 : 0) && st.started === (pb.start === B.cairoDay_()), st);
 }
 
 section('18. Tracker: log_session, stats, check-in, isolation');
@@ -553,6 +556,175 @@ section('18. Tracker: log_session, stats, check-in, isolation');
   check('B cannot log on A\'s plan', post(S, { type: 'log_session', session: B.session, participant_id: A.pid, session_id: 'w1d1', status: 'done' }).error === 'no_plan');
   check('B\'s check-in lands under B', post(S, { type: 'checkin', session: B.session, participant_id: A.pid, submission_token: 'ci2',
     weight_kg: '80', sessions_done: '1', energy: '3' }).ok && table(S, 'Checkins')[1].participant_id === B.pid);
+}
+
+/* ------------------------------------------------------ step 5: coach */
+const COACH = { username: 'me@x.com', password: 'Coach#Strong1' };
+function coach(S) {
+  S.setCoachPassword(COACH.password, COACH.username);
+  return post(S, { type: 'coach_login', username: 'Me@X.com', password: COACH.password }).session;
+}
+function planJson(pid, opts) {
+  opts = opts || {};
+  const sessions = opts.sessions || [
+    { session_id: 'w1d1', week: 1, day: 1, type: 'run', title: { ar: 'جري ومشي', en: 'Run-walk' },
+      details: { ar: '8 مرات: دقيقة جري + دقيقتين مشي', en: '8 x (1 + 2)' }, target_duration_min: 30, target_distance_km: null, target_intensity: 'easy', target_reps: null },
+    { session_id: 'w1d3', week: 1, day: 3, type: 'rest', title: { ar: 'راحة' } },
+    { session_id: 'w2d1', week: 2, day: 1, type: 'strength', title: { ar: 'قوة' }, details: { ar: '3 جولات' }, target_reps: '3x12' }
+  ];
+  return JSON.stringify(Object.assign({ format: 'ayw-plan-v1', participant_id: pid, title: { ar: 'برنامج', en: 'Plan' },
+    start_date: opts.start, weeks: opts.weeks || 2, coach_note: { ar: 'يلا بينا' }, sessions }, opts.extra || {}), null, 2);
+}
+
+section('19. Coach login and the role check');
+{
+  const S = load({ props: PROPS });
+  const A = member(S, '1011111111');
+  S.setCoachPassword(COACH.password, COACH.username);
+  check('wrong coach password → bad_credentials', post(S, { type: 'coach_login', username: COACH.username, password: 'nope-nope' }).error === 'bad_credentials');
+  const c = post(S, { type: 'coach_login', username: 'ME@x.com', password: COACH.password });
+  check('right password (email in any case) → coach session', c.ok && /^[0-9a-f]{64}$/.test(c.session), c);
+  check('a participant session is refused by coach routes', post(S, { type: 'coach_list', session: A.session }).error === 'forbidden');
+  check('no session → session_expired', post(S, { type: 'coach_get', participant_id: A.pid }).error === 'session_expired');
+  check('the coach session cannot use participant routes', post(S, { type: 'me', session: c.session }).error === 'forbidden');
+  check('the coach password lives only in Script Properties',
+    !JSON.stringify(S.__state.sheets.Users._state.rows).includes(COACH.username) && !!S.__state.props.COACH_HASH);
+  [1, 2, 3, 4, 5].forEach(() => post(S, { type: 'coach_login', username: COACH.username, password: 'wrong-wrong' }));
+  check('5 wrong coach passwords → locked', post(S, { type: 'coach_login', username: COACH.username, password: COACH.password }).error === 'locked');
+  S.unlockCoach();
+  check('"Unlock the coach login" lets the coach back in', post(S, { type: 'coach_login', username: COACH.username, password: COACH.password }).ok === true);
+
+  post(S, { type: 'logout', session: A.session });
+  const before = table(S, 'Sessions').length;
+  post(S, { type: 'coach_login', username: COACH.username, password: COACH.password });
+  check('coach login clears revoked sessions out of the tab', table(S, 'Sessions').every((r) => r.revoked !== 'TRUE') && table(S, 'Sessions').length <= before);
+}
+
+section('20. Coach list, detail and brief');
+{
+  const S = load({ props: PROPS });
+  const A = member(S, '1011111111');
+  const B = member(S, '1022222222');
+  const C = post(S, Object.assign({}, ADULT, { submission_token: 'tc', whatsapp: '+20 1033333333', name: 'سارة علي', parq_heart: 'yes' })).participant_id;
+  const cs = coach(S);
+  handPlan(S, B.pid, S.isoOfDay_(S.dayNum_(S.cairoDay_()) - 3));
+  S.updateRow_('Users', S.findUser_('participant_id', B.pid)._row, { status: 'active' });
+
+  const list = post(S, { type: 'coach_list', session: cs });
+  const ids = list.participants.map((p) => p.participant_id);
+  check('every participant is listed', list.ok && ids.length === 3, ids);
+  check('awaiting-plan participants come first', list.participants[0].status === 'awaiting_plan' && list.participants[2].participant_id === B.pid, list.participants.map((p) => p.status));
+  const pc = list.participants.find((p) => p.participant_id === C);
+  check('red flag: needs medical clearance', pc.flags.clearance === true && pc.flags.default_active === true);
+  check('default password no longer active once changed', list.participants.find((p) => p.participant_id === A.pid).flags.default_active === false);
+  check('B shows its plan and adherence', list.participants.find((p) => p.participant_id === B.pid).stats.planned_to_date >= 1);
+  check('the Progress tab gets one row per participant', table(S, 'Progress').length === 3 && table(S, 'Progress').some((r) => r.participant_id === B.pid && r.plan === 'v1'));
+  check('status filter works', post(S, { type: 'coach_list', session: cs, status: 'active' }).participants.length === 1);
+
+  const g = post(S, { type: 'coach_get', session: cs, participant_id: C });
+  check('detail: full intake with BMI for the coach', g.ok && typeof g.intake.bmi === 'number' && g.intake.parq_heart === 'yes', g.intake && g.intake.bmi);
+  check('detail: no submission token leaks', g.intake.submission_token === undefined);
+  check('detail: default password still active, value given for the welcome message', g.user.default_active === true && g.default_password === PROPS.DEFAULT_PASSWORD);
+  check('unknown participant → not_found', post(S, { type: 'coach_get', session: cs, participant_id: 'AYW-2026-0999' }).error === 'not_found');
+
+  const brief = post(S, { type: 'coach_brief', session: cs, participant_id: C }).brief;
+  check('brief has the ID, body numbers and the plan format', brief.includes(C) && /BMI \d/.test(brief) && brief.includes('ayw-plan-v1'));
+  check('brief flags the PAR-Q answer', /PAR-Q "yes" answers: parq_heart/.test(brief) && /YES — be conservative/.test(brief));
+  check('brief leaves out name, phone and email', !brief.includes('سارة') && !brief.includes('1033333333') && !brief.includes('a@b.com'));
+}
+
+section('21. Plan validation and publishing');
+{
+  const S = load({ props: PROPS });
+  const A = member(S, '1011111111');
+  const C = post(S, Object.assign({}, ADULT, { submission_token: 'tc', whatsapp: '+20 1033333333', parq_chest: 'yes' })).participant_id;
+  const cs = coach(S);
+  const val = (pid, json) => post(S, { type: 'coach_plan_validate', session: cs, participant_id: pid, plan_json: json });
+
+  const broken = val(A.pid, '{\n  "format": "ayw-plan-v1",\n  "weeks": 2,,\n}');
+  check('broken JSON → error with a line number', broken.valid === false && broken.errors[0].line === 3, broken.errors);
+  check('wrong participant → error', val(A.pid, planJson(C)).errors.some((e) => /participant_id/.test(e.msg)));
+  const bad = val(A.pid, planJson(A.pid, { sessions: [
+    { session_id: 'week1', week: 1, day: 1, type: 'run', title: { ar: 'x' }, details: { ar: 'y' } },
+    { session_id: 'w1d2', week: 3, day: 9, type: 'yoga', title: { en: 'only english' }, details: { ar: 'y' }, target_intensity: 'max' },
+    { session_id: 'w1d2', week: 1, day: 2, type: 'run', title: { ar: 'x' }, details: { ar: 'y' } }] }));
+  const msgs = bad.errors.map((e) => e.msg).join(' | ');
+  check('bad session_id, week, day, type, intensity, missing Arabic and duplicate are all caught',
+    /must look like w1d1/.test(msgs) && /"week" must be 1 to 2/.test(msgs) && /"day" must be 1 to 7/.test(msgs) &&
+    /"type" must be/.test(msgs) && /target_intensity/.test(msgs) && /Arabic text is required/.test(msgs) && /used twice/.test(msgs), msgs);
+  check('errors point at the session\'s line', bad.errors.every((e) => typeof e.line === 'number' && e.line > 1));
+  check('start_date must be a real date', val(A.pid, planJson(A.pid, { start: '2026-02-30' })).errors.some((e) => /start_date/.test(e.msg)));
+  const many = Array.from({ length: 401 }, (_, i) => ({ session_id: 'w1d' + ((i % 7) + 1) + '-' + (i % 10), week: 1, day: (i % 7) + 1, type: 'walk', title: { ar: 'م' }, details: { ar: 'م' } }));
+  check('more than 400 sessions → error', val(A.pid, planJson(A.pid, { sessions: many })).errors.some((e) => /at most 400/.test(e.msg)));
+
+  const ok = val(A.pid, '```json\n' + planJson(A.pid, { start: '2026-10-10' }) + '\n```');
+  check('a valid plan (even inside ``` fences) gives a preview', ok.valid === true && ok.plan.by_week.length === 2 && ok.sessions === 3, ok.errors);
+  check('preview dates follow start_date', ok.plan.by_week[1].sessions[0].date === '2026-10-17');
+  const html = val(A.pid, planJson(A.pid, { extra: { title: { ar: '<b>برنامج</b><script>x</script>' } } }));
+  check('HTML is stripped from text', html.plan.title.ar === 'برنامجx', html.plan && html.plan.title);
+
+  check('flagged participant: publish blocked until clearance is ticked',
+    post(S, { type: 'coach_plan_publish', session: cs, participant_id: C, plan_json: planJson(C) }).error === 'clearance_required');
+  check('…and allowed once ticked', post(S, { type: 'coach_plan_publish', session: cs, participant_id: C, plan_json: planJson(C), clearance_confirmed: true }).ok === true);
+  check('publishing an invalid plan is refused with the errors',
+    post(S, { type: 'coach_plan_publish', session: cs, participant_id: A.pid, plan_json: '{}' }).error === 'invalid_plan');
+
+  const p1 = post(S, { type: 'coach_plan_publish', session: cs, participant_id: A.pid, plan_json: planJson(A.pid), site_url: 'http://localhost:8787/' });
+  check('publish v1 → plan id, version, WhatsApp link', p1.ok && p1.plan_id === A.pid + '-v1' && p1.version === 1 && /^https:\/\/wa\.me\/201011111111\?text=/.test(p1.whatsapp_url), p1);
+  check('…participant becomes active, mirrored in Submissions',
+    S.findUser_('participant_id', A.pid).status === 'active' && table(S, 'Submissions').find((r) => r.participant_id === A.pid).status === 'Active');
+  const me = post(S, { type: 'me', session: A.session });
+  check('the participant sees the published plan', me.plan && me.plan.version === 1 && me.plan.by_week[0].sessions.length === 2);
+
+  post(S, { type: 'log_session', session: A.session, session_id: 'w1d1', status: 'done' });
+  post(S, { type: 'log_session', session: A.session, session_id: 'w2d1', status: 'partial' });
+  const v2 = planJson(A.pid, { sessions: [
+    { session_id: 'w1d1', week: 1, day: 1, type: 'run', title: { ar: 'جري أطول' }, details: { ar: '35 دقيقة' } },
+    { session_id: 'w2d2', week: 2, day: 2, type: 'walk', title: { ar: 'مشي' }, details: { ar: '40 دقيقة' } }] });
+  const p2 = post(S, { type: 'coach_plan_publish', session: cs, participant_id: A.pid, plan_json: v2 });
+  check('publish v2 → version 2, v1 archived', p2.version === 2 &&
+    table(S, 'Plans').filter((p) => p.participant_id === A.pid).map((p) => p.status).sort().join() === 'archived,published');
+  const me2 = post(S, { type: 'me', session: A.session });
+  check('v2 keeps the log on the matching session_id', me2.plan.version === 2 && me2.logs.some((l) => l.session_id === 'w1d1' && l.status === 'done'));
+  const g2 = post(S, { type: 'coach_get', session: cs, participant_id: A.pid });
+  check('logs whose session is gone show under "earlier plan versions"',
+    g2.earlier_logs.length === 1 && g2.earlier_logs[0].session_id === 'w2d1' && g2.logs.length === 1 && g2.versions.length === 2);
+  check('no account → no publish', (() => {
+    const N = load(); const n = post(N, ADULT).participant_id; N.__state.props.DEFAULT_PASSWORD = 'x';
+    N.setCoachPassword(COACH.password, COACH.username);
+    const s = post(N, { type: 'coach_login', username: COACH.username, password: COACH.password }).session;
+    return post(N, { type: 'coach_plan_publish', session: s, participant_id: n, plan_json: planJson(n) }).error === 'no_account';
+  })());
+}
+
+section('22. Reset links from the coach, status, notes, unlock');
+{
+  const S = load({ props: PROPS });
+  const A = member(S, '1011111111');
+  const cs = coach(S);
+  const r1 = post(S, { type: 'coach_reset_link', session: cs, participant_id: A.pid });
+  check('reset link: token in the # fragment, never the query string',
+    r1.ok && /^https:\/\/ahamrousy\.github\.io\/3aash-ya-wa7sh\/reset\.html#t=[0-9a-f]{64}$/.test(r1.reset_url) && !/\?/.test(r1.reset_url), r1.reset_url);
+  check('…48 hours, WhatsApp link to the participant', Math.abs(Date.parse(r1.expires_at) - Date.now() - 48 * 36e5) < 6e4 && r1.whatsapp_url.startsWith('https://wa.me/201011111111?text='));
+  check('only the token hash is stored', !JSON.stringify(table(S, 'ResetTokens')).includes(r1.reset_url.split('#t=')[1]));
+  const r2 = post(S, { type: 'coach_reset_link', session: cs, participant_id: A.pid, site_url: 'http://localhost:8787/' });
+  check('a localhost console gets localhost links', r2.reset_url.startsWith('http://localhost:8787/reset.html#t='));
+  check('a strange site_url falls back to the real site',
+    post(S, { type: 'coach_reset_link', session: cs, participant_id: A.pid, site_url: 'javascript:alert(1)//' }).reset_url.startsWith('https://ahamrousy.github.io/'));
+  check('a new link kills the older ones', post(S, { type: 'reset_verify', token: r1.reset_url.split('#t=')[1] }).error === 'reset_invalid');
+  check('AuthLog has reset_created', table(S, 'AuthLog').some((x) => x.event === 'reset_created'));
+
+  const up = (b) => post(S, Object.assign({ type: 'coach_update_user', session: cs, participant_id: A.pid }, b));
+  check('status → paused, mirrored to Submissions', up({ status: 'paused' }).status === 'paused' &&
+    table(S, 'Submissions').find((r) => r.participant_id === A.pid).status === 'Paused');
+  check('a made-up status is refused', up({ status: 'vip' }).error === 'invalid');
+  check('coach note saved in Submissions', up({ coach_note: '=HYPERLINK("x")' }).coach_notes === '=HYPERLINK("x")' &&
+    typeof S.__state.sheets.Submissions._state.rows[1][S.HEADERS.indexOf('coach_notes')] === 'string');
+  [1, 2, 3, 4, 5].forEach(() => post(S, { type: 'login', username: '+201011111111', password: 'wrong-pass' }));
+  check('participant is locked', post(S, { type: 'login', username: '+201011111111', password: 'Wa7sh!2026' }).error === 'locked');
+  check('coach unlock → can log in again', up({ unlock: true }).locked === false &&
+    post(S, { type: 'login', username: '+201011111111', password: 'Wa7sh!2026' }).ok === true);
+  check('AuthLog has unlock', table(S, 'AuthLog').some((x) => x.event === 'unlock'));
 }
 
 console.log('\n================  ' + pass + ' passed, ' + fail + ' failed  ================\n');

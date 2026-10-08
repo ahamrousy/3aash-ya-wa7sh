@@ -186,7 +186,15 @@ var ROUTES = {
   reset_verify:    handleResetVerify,
   reset_complete:  handleResetComplete,
   me:              handleMe,
-  log_session:     handleLogSession
+  log_session:     handleLogSession,
+  coach_login:         handleCoachLogin,
+  coach_list:          handleCoachList,
+  coach_get:           handleCoachGet,
+  coach_brief:         handleCoachBrief,
+  coach_plan_validate: handleCoachPlanValidate,
+  coach_plan_publish:  handleCoachPlanPublish,
+  coach_reset_link:    handleCoachResetLink,
+  coach_update_user:   handleCoachUpdateUser
 };
 
 function doPost(e) {
@@ -757,6 +765,7 @@ function onOpen() {
     .addItem('Send me a test email', 'sendTestEmail')
     .addSeparator()
     .addItem('Set coach password…', 'setCoachPasswordFromMenu')
+    .addItem('Unlock the coach login', 'unlockCoachFromMenu')
     .addItem('Create accounts for existing participants', 'migrateExistingParticipants')
     .addItem('Create test participant (AYW-9999-0001)', 'createTestParticipant')
     .addItem('Delete test participant', 'deleteTestParticipant')
@@ -967,8 +976,18 @@ var TABS = {
   AuthLog: {
     headers: ['timestamp', 'username', 'event', 'result', 'detail'],
     numeric: {}
+  },
+  /* One row per participant, rewritten each time the coach console loads its
+     list (spec: "extend the Dashboard, or add Dashboard2"). */
+  Progress: {
+    headers: ['participant_id', 'name', 'status', 'plan', 'start_date', 'weeks', 'current_week',
+              'planned_to_date', 'done', 'partial', 'skipped', 'adherence_pct', 'streak_weeks',
+              'last_log', 'last_activity', 'default_password_active', 'updated_at'],
+    numeric: { weeks: true, current_week: true, planned_to_date: true, done: true, partial: true,
+               skipped: true, adherence_pct: true, streak_weeks: true }
   }
 };
+var SHEET_PROGRESS = 'Progress';
 
 /* Security settings. Changing PW_ITERATIONS later is safe: each user row keeps
    the count it was hashed with, and a successful login re-hashes it with the
@@ -1423,8 +1442,21 @@ function setCoachPassword(password, username) {
   var props = PropertiesService.getScriptProperties();
   props.setProperty('COACH_USERNAME', username);
   props.setProperty('COACH_HASH', JSON.stringify(makePasswordRecord_(password)));
+  unlockCoach();
   logAuth_(username, 'change_password', 'ok', 'coach password set');
   return 'Coach login saved for ' + username + '.';
+}
+
+/** Lift a lockout on the coach login (too many wrong passwords). */
+function unlockCoach() {
+  var key = 'coach:' + String(prop_('COACH_USERNAME') || '');
+  var idk = sha256Hex_(key).slice(0, 20);
+  try { CacheService.getScriptCache().removeAll(['ulock_' + idk, 'ufail_' + idk]); } catch (e) { /* nothing cached */ }
+  return 'The coach login is unlocked.';
+}
+
+function unlockCoachFromMenu() {
+  SpreadsheetApp.getUi().alert(unlockCoach());
 }
 
 /** Menu version: asks for the username and password in two dialogs. */
@@ -1651,29 +1683,34 @@ function dateCell_(v) {
 }
 function num_(v) { return v === '' || v === null || v === undefined || !isFinite(Number(v)) ? null : Number(v); }
 
-/** The participant's published plan with its sessions, or null. */
-function publishedPlan_(pid) {
+/**
+ * The participant's published plan with its sessions, or null. The coach
+ * list passes the Plans and PlanSessions rows in, so the tabs are read once.
+ */
+function publishedPlan_(pid, planRows, sessionRows) {
   var best = null;
-  readRows_(SHEET_PLANS).forEach(function (p) {
+  (planRows || readRows_(SHEET_PLANS)).forEach(function (p) {
     if (String(p.participant_id) !== pid || String(p.status) !== 'published' || !p.plan_id) return;
     if (!best || Number(p.version) > Number(best.version)) best = p;
   });
-  return best ? buildPlan_(best) : null;
+  return best ? buildPlan_(best, sessionRows) : null;
 }
 
 /** Turn a Plans row (and its PlanSessions rows) into the plan object. */
-function buildPlan_(p) {
+function buildPlan_(p, sessionRows) {
   var planId = String(p.plan_id);
   var startGiven = dateCell_(p.start_date);
-  /* No start date: day 1 is the Saturday on or before the day it was published. */
+  /* No start date: day 1 is the first Saturday on or after the day it was
+     published — never one in the past, so nobody starts with sessions
+     already "due" that they never saw. */
   var start = startGiven;
   if (!start) {
     var pub = dayNum_(cairoDay_(p.published_at ? new Date(timeOf_(p.published_at) || Date.now()) : new Date()));
     var weekday = new Date(pub * 864e5).getUTCDay();            // 0 Sun … 6 Sat
-    start = isoOfDay_(pub - ((weekday + 1) % 7));
+    start = isoOfDay_(pub + ((6 - weekday + 7) % 7));
   }
   var startN = dayNum_(start);
-  var sessions = readRows_(SHEET_PLAN_SESSIONS)
+  var sessions = (sessionRows || readRows_(SHEET_PLAN_SESSIONS))
     .filter(function (s) { return String(s.plan_id) === planId && s.session_id; })
     .map(function (s) {
       var week = Number(s.week) || 1, day = Number(s.day) || 1;
@@ -1764,13 +1801,16 @@ function planStats_(plan, logs, today) {
   };
 }
 
-/** The participant's own last n check-ins, oldest first. */
-function checkinsOf_(pid, n) {
+function checkinRows_() {
   var sh = getSheet_(SHEET_CHECKINS, CHECKIN_HEADERS);
   var last = sh.getLastRow();
-  if (last < 2) return [];
+  return last < 2 ? [] : sh.getRange(2, 1, last - 1, CHECKIN_HEADERS.length).getValues();
+}
+
+/** The participant's own last n check-ins, oldest first. */
+function checkinsOf_(pid, n, rows) {
   var H = CHECKIN_HEADERS;
-  var out = sh.getRange(2, 1, last - 1, H.length).getValues()
+  var out = (rows || checkinRows_())
     .filter(function (r) { return String(r[H.indexOf('participant_id')]).toUpperCase() === pid; })
     .map(function (r) {
       var ts = r[H.indexOf('timestamp')];
@@ -1843,6 +1883,552 @@ function handleLogSession(body) {
     var logs = logsOf_(pid);
     var mine = logs.filter(function (l) { return String(l.session_id) === sid; })[0];
     return json({ ok: true, duplicate: !!seen, log: mine ? publicLog_(mine) : null, stats: planStats_(plan, logs) });
+  });
+}
+
+
+/* ===========================================================================
+   COACH CONSOLE — every route checks role = coach on the server
+   ======================================================================== */
+var USER_STATUSES = ['awaiting_plan', 'active', 'paused', 'completed'];
+/* Users.status is the truth; Submissions.status (the coach's old dropdown)
+   follows it so the sheet never shows two different answers. */
+var STATUS_MIRROR = { awaiting_plan: 'Reviewing', active: 'Active', paused: 'Paused', completed: 'Completed' };
+var DEFAULT_SITE_URL = 'https://ahamrousy.github.io/3aash-ya-wa7sh/';
+
+/** Write a whole tab body at once: much faster than row-by-row for many rows. */
+function rewriteRows_(name, rows) {
+  var def = TABS[name];
+  var sh = ensureTab_(name);
+  var last = sh.getLastRow();
+  if (last >= 2) sh.getRange(2, 1, last - 1, def.headers.length).clearContent();
+  if (!rows.length) return;
+  sh.getRange(2, 1, rows.length, def.headers.length).setValues(rows.map(function (r) {
+    return def.headers.map(function (h) { return cellOut_(r[h], def.numeric[h]); });
+  }));
+}
+
+/** Append many rows with one write. */
+function appendRows_(name, rows) {
+  if (!rows.length) return;
+  var def = TABS[name];
+  var sh = ensureTab_(name);
+  sh.getRange(sh.getLastRow() + 1, 1, rows.length, def.headers.length).setValues(rows.map(function (r) {
+    return def.headers.map(function (h) { return cellOut_(r[h], def.numeric[h]); });
+  }));
+}
+
+function cellOut_(v, numeric) {
+  if (v === undefined || v === null) return '';
+  if (v instanceof Date) return v;
+  if (numeric) return v === '' ? '' : Number(v);
+  return asCell_(String(v));
+}
+
+/** Drop sessions that are revoked or long expired, so the tab stays small. */
+function purgeSessions_() {
+  var cutoff = Date.now() - 864e5;
+  var rows = readRows_(SHEET_SESSIONS);
+  var keep = rows.filter(function (r) { return !isTrue_(r.revoked) && timeOf_(r.expires_at) > cutoff; });
+  if (keep.length !== rows.length) rewriteRows_(SHEET_SESSIONS, keep);
+}
+
+/** Every intake row as an object (one read). */
+function allSubmissions_() {
+  var sh = getSheet_(SHEET_MAIN, HEADERS);
+  var last = sh.getLastRow();
+  if (last < 2) return [];
+  return sh.getRange(2, 1, last - 1, HEADERS.length).getValues().map(function (r, i) {
+    var o = { _row: i + 2 };
+    HEADERS.forEach(function (h, j) { o[h] = fromCell_(r[j]); });
+    o.participant_id = String(o.participant_id).trim().toUpperCase();
+    return o;
+  }).filter(function (o) { return /^AYW-\d{4}-\d{4}$/.test(o.participant_id); });
+}
+
+function isoOf_(v) {
+  if (v instanceof Date) return v.toISOString();
+  var t = timeOf_(v);
+  return t ? new Date(t).toISOString() : '';
+}
+
+function userFlags_(user) {
+  return user ? { default_active: defaultPasswordActive_(user), locked: isLocked_(user) } : { default_active: false, locked: false };
+}
+
+/** One participant as the list (and the Progress tab) shows them. */
+function summaryOf_(sub, d) {
+  var pid = sub.participant_id;
+  var user = d.usersByPid[pid] || null;
+  var plan = publishedPlan_(pid, d.plans, d.planSessions);
+  var logs = logsOf_(pid, d.logs);
+  var stats = plan ? planStats_(plan, logs) : null;
+  var lastLog = logs.reduce(function (m, l) { var t = isoOf_(l.updated_at || l.logged_at); return t > m ? t : m; }, '');
+  var lastCi = d.checkins.reduce(function (m, r) {
+    return String(r[CHECKIN_HEADERS.indexOf('participant_id')]).toUpperCase() === pid
+      ? (function (t) { return t > m ? t : m; })(isoOf_(r[0])) : m;
+  }, '');
+  var lastLogin = user ? isoOf_(user.last_login_at) : '';
+  var activity = [lastLog, lastCi, lastLogin].sort().pop() || '';
+  var f = userFlags_(user);
+  return {
+    participant_id: pid, name: String(sub.name || ''), objectives: String(sub.objectives || ''),
+    joined: isoOf_(sub.timestamp), status: user ? String(user.status) : 'no_account',
+    username: user ? String(user.username) : '',
+    plan: plan ? { version: plan.version, start: plan.start, weeks: plan.weeks } : null,
+    stats: stats, last_log: lastLog, last_activity: activity,
+    flags: { clearance: isTrue_(sub.needs_medical_clearance), minor: isTrue_(sub.is_minor),
+             default_active: f.default_active, locked: f.locked }
+  };
+}
+
+function loadAllForCoach_() {
+  var users = readRows_(SHEET_USERS);
+  var byPid = {};
+  users.forEach(function (u) { byPid[String(u.participant_id)] = u; });
+  return {
+    subs: allSubmissions_(), usersByPid: byPid, plans: readRows_(SHEET_PLANS),
+    planSessions: readRows_(SHEET_PLAN_SESSIONS), logs: readRows_(SHEET_LOGS), checkins: checkinRows_()
+  };
+}
+
+function writeProgressTab_(list) {
+  var now = nowIso_();
+  rewriteRows_(SHEET_PROGRESS, list.map(function (p) {
+    var s = p.stats || {};
+    return {
+      participant_id: p.participant_id, name: p.name, status: p.status,
+      plan: p.plan ? 'v' + p.plan.version : '', start_date: p.plan ? p.plan.start : '', weeks: p.plan ? p.plan.weeks : '',
+      current_week: p.stats ? s.current_week : '', planned_to_date: p.stats ? s.planned_to_date : '',
+      done: p.stats ? s.done : '', partial: p.stats ? s.partial : '', skipped: p.stats ? s.skipped : '',
+      adherence_pct: p.stats && s.adherence !== null ? s.adherence : '', streak_weeks: p.stats ? s.streak : '',
+      last_log: p.last_log, last_activity: p.last_activity,
+      default_password_active: p.flags.default_active ? 'TRUE' : 'FALSE', updated_at: now
+    };
+  }));
+}
+
+/** The site address for reset links: the console's own, if it looks right. */
+function siteUrl_(given) {
+  var s = String(given || '');
+  if (/^https:\/\/[a-z0-9.\-]+(\/[\w.\-\/]*)?\/$/i.test(s) || /^http:\/\/localhost:\d+\/([\w.\-\/]*\/)?$/.test(s)) return s;
+  return prop_('SITE_URL') || DEFAULT_SITE_URL;
+}
+
+function waLink_(phone, text) {
+  return 'https://wa.me/' + digits_(phone) + '?text=' + encodeURIComponent(text);
+}
+
+/* --------------------------------------------------------------- login */
+function handleCoachLogin(body) {
+  var username = clean_(body.username, 120).toLowerCase();
+  var password = str_(body.password, 200);
+  var key = 'coach:' + username;
+  return withLock_(function () {
+    var props = PropertiesService.getScriptProperties();
+    var want = String(props.getProperty('COACH_USERNAME') || '');
+    var rec = null;
+    try { rec = JSON.parse(props.getProperty('COACH_HASH') || 'null'); } catch (e) { rec = null; }
+    if (isNameLocked_(key)) { logAuth_(key, 'login', 'locked', ''); return fail_('locked'); }
+    if (!want || !rec || username !== want || !checkPassword_(password, rec)) {
+      registerFailure_(null, key);
+      return fail_('bad_credentials');
+    }
+    if (Number(rec.iter) !== AUTH.PW_ITERATIONS) props.setProperty('COACH_HASH', JSON.stringify(makePasswordRecord_(password)));
+    purgeSessions_();
+    var sess = createSession_(COACH_PID, 'coach', 'full');
+    logAuth_(key, 'login', 'ok', '');
+    return json({ ok: true, session: sess.token, expires_at: sess.expires_at, scope: 'full', name: username, username: username });
+  });
+}
+
+/* ---------------------------------------------------------------- list */
+function handleCoachList(body) {
+  var a = auth_(body, 'coach');
+  if (a.reply) return a.reply;
+  var d = loadAllForCoach_();
+  var list = d.subs.map(function (sub) { return summaryOf_(sub, d); });
+  var rank = function (p) { return p.status === 'awaiting_plan' ? 0 : p.status === 'no_account' ? 1 : 2; };
+  list.sort(function (x, y) {
+    return rank(x) - rank(y) || (y.last_activity || y.joined).localeCompare(x.last_activity || x.joined);
+  });
+  try { withLock_(function () { writeProgressTab_(list); return null; }); }
+  catch (e) { log_('Progress tab not written: ' + e); }
+  var filter = clean_(body.status, 20);
+  if (filter) list = list.filter(function (p) { return p.status === filter; });
+  return json({ ok: true, participants: list, today: cairoDay_() });
+}
+
+/* -------------------------------------------------------------- detail */
+function handleCoachGet(body) {
+  var a = auth_(body, 'coach');
+  if (a.reply) return a.reply;
+  var pid = clean_(body.participant_id, 16).toUpperCase();
+  var sub = submissionOf_(pid);
+  if (!sub) return fail_('not_found');
+  var user = findUser_('participant_id', pid);
+  var plans = readRows_(SHEET_PLANS).filter(function (p) { return String(p.participant_id) === pid; });
+  var plan = publishedPlan_(pid, plans);
+  var logs = logsOf_(pid);
+  var ids = {};
+  if (plan) plan.sessions.forEach(function (s) { ids[s.session_id] = true; });
+
+  var intake = {};
+  HEADERS.forEach(function (h) {
+    if (h === 'submission_token') return;
+    var v = sub[h];
+    intake[h] = v instanceof Date ? isoOf_(v) : v;
+  });
+  var f = userFlags_(user);
+  return json({
+    ok: true, participant_id: pid, today: cairoDay_(), intake: intake,
+    user: user ? {
+      username: String(user.username), status: String(user.status), must_change_password: isTrue_(user.must_change_password),
+      default_active: f.default_active, locked: f.locked, locked_until: String(user.locked_until || ''),
+      failed_count: Number(user.failed_count) || 0, created_at: String(user.created_at || ''),
+      last_login_at: String(user.last_login_at || ''), password_changed_at: String(user.password_changed_at || '')
+    } : null,
+    default_password: f.default_active ? prop_('DEFAULT_PASSWORD') : undefined,
+    checkins: checkinsOf_(pid, 0),
+    plan: plan ? publicPlan_(plan) : null,
+    stats: plan ? planStats_(plan, logs) : null,
+    versions: plans.map(function (p) {
+      return { plan_id: String(p.plan_id), version: Number(p.version) || 0, status: String(p.status),
+               published_at: String(p.published_at || ''), title: biText_(p.title) };
+    }).sort(function (x, y) { return y.version - x.version; }),
+    logs: logs.filter(function (l) { return ids[String(l.session_id)]; }).map(publicLog_),
+    earlier_logs: logs.filter(function (l) { return !ids[String(l.session_id)]; }).map(publicLog_)
+  });
+}
+
+/* --------------------------------------------------------------- brief */
+/**
+ * Plain text for a separate Claude chat: the intake summary and the plan
+ * format. No name, phone or email — writing a plan does not need them.
+ */
+function handleCoachBrief(body) {
+  var a = auth_(body, 'coach');
+  if (a.reply) return a.reply;
+  var pid = clean_(body.participant_id, 16).toUpperCase();
+  var s = submissionOf_(pid);
+  if (!s) return fail_('not_found');
+  var v = function (k) { var x = s[k]; return x === '' || x === null || x === undefined ? '—' : String(x); };
+  var parq = PARQ_KEYS.filter(function (k) { return s[k] === 'yes'; });
+  var cis = checkinsOf_(pid, 4);
+  var lines = [
+    'PARTICIPANT BRIEF — 3aash Ya Wa7sh (عاش يا وحش)',
+    'Participant ID: ' + pid,
+    '(Name, phone and email are left out on purpose.)',
+    '',
+    'GOALS',
+    '- Objectives: ' + v('objectives'),
+    '- Target weight (kg): ' + v('target_weight') + ' · timeframe (months): ' + v('timeframe'),
+    '- New sport: ' + v('new_sport') + ' ' + (s.new_sport_other || '') + ' · target: ' + v('new_sport_target') + ' ' + (s.new_sport_target_other || '') + ' · experience: ' + v('experience'),
+    '- Race/time goal: ' + v('race_sport') + ' ' + v('race_distance') + ' · current time ' + v('current_time') + ' → target ' + v('target_time') + ' · race: ' + v('race_name') + ' on ' + v('race_date'),
+    '- Community: ' + v('community_needs') + ' ' + (s.community_other || ''),
+    '- Why now: ' + v('why_now'),
+    '',
+    'BODY (coach only — never shown to the participant)',
+    '- Age ' + v('age') + (isTrue_(s.is_minor) ? ' (UNDER 18)' : '') + ' · gender ' + v('gender'),
+    '- Weight ' + v('weight_kg') + ' kg · height ' + v('height_cm') + ' cm · waist ' + v('waist_cm') + ' cm',
+    '- BMI ' + v('bmi') + ' · waist-to-height ' + v('waist_to_height'),
+    '',
+    'CURRENT ACTIVITY',
+    '- Sports now: ' + v('current_sports'),
+    '- Details: ' + v('activity_details'),
+    '- Recent results: ' + v('recent_results'),
+    '',
+    'AVAILABILITY',
+    '- ' + v('days_per_week') + ' days/week · preferred days: ' + v('preferred_days'),
+    '- ' + v('hours_per_session') + ' min per session · time of day: ' + v('time_of_day'),
+    '- Facilities: ' + v('facilities'),
+    '',
+    'HEALTH',
+    '- PAR-Q "yes" answers: ' + (parq.length ? parq.join(', ') : 'none'),
+    '- Needs medical clearance: ' + (isTrue_(s.needs_medical_clearance) ? 'YES — be conservative' : 'no'),
+    '- Injuries / notes: ' + v('injuries_notes'),
+    '',
+    'LATEST CHECK-INS',
+    cis.length ? cis.map(function (c) {
+      return '- ' + c.date + ': ' + c.weight_kg + ' kg' + (c.waist_cm ? ', waist ' + c.waist_cm : '') +
+             ', ' + c.sessions_done + ' sessions, energy ' + c.energy + '/5';
+    }).join('\n') : '- none yet',
+    '',
+    'COACH NOTES',
+    '- ' + v('coach_notes'),
+    '',
+    '----------------------------------------------------------------------',
+    'TASK: write this person\'s training plan as JSON, exactly in the format',
+    'below ("ayw-plan-v1"). Reply with the JSON only — no other text.',
+    '',
+    JSON.stringify({
+      format: 'ayw-plan-v1', participant_id: pid,
+      title: { ar: 'برنامج 8 أسابيع — أول 5 كم', en: '8 weeks — first 5 km' },
+      start_date: 'YYYY-MM-DD', weeks: 8,
+      coach_note: { ar: 'ابدأ هادي...', en: 'Start easy...' },
+      sessions: [{
+        session_id: 'w1d1', week: 1, day: 1, type: 'run',
+        title: { ar: 'جري ومشي', en: 'Run-walk' },
+        details: { ar: '8 مرات: دقيقة جري + دقيقتين مشي', en: '8 x (1 min run + 2 min walk)' },
+        target_duration_min: 30, target_distance_km: null, target_intensity: 'easy', target_reps: null
+      }]
+    }, null, 2),
+    '',
+    'RULES',
+    '- "format" must be "ayw-plan-v1" and "participant_id" must be "' + pid + '".',
+    '- "weeks": 1 to 52. "start_date" is optional (YYYY-MM-DD); leave it out to start on the first Saturday after publishing.',
+    '- "day" 1–7, where day 1 is the weekday of start_date (Saturday if there is none). "week" ≤ "weeks".',
+    '- "session_id": unique, like w1d1 (w<week>d<day>); add -2 for a second session on the same day (w1d1-2).',
+    '- "type": run, walk, swim, bike, strength, mobility, cross, rest or other.',
+    '- "target_intensity": easy, moderate, hard, race, or null. Other targets are numbers or null.',
+    '- Titles and details: Egyptian Arabic required, English optional. Title ≤ 80 characters, details ≤ 600. No HTML.',
+    '- At most 400 sessions. Respect the availability above and the health answers.'
+  ];
+  return json({ ok: true, brief: lines.join('\n') });
+}
+
+/* ---------------------------------------------------- plan validation */
+function stripHtml_(s) { return String(s == null ? '' : s).replace(/<[^>]*>/g, '').replace(/\s+$/g, ''); }
+
+function lineAt_(raw, pos) { return pos >= 0 ? raw.slice(0, pos).split('\n').length : null; }
+
+/**
+ * Check a plan against spec section 8. Returns {errors: [{msg, line}], plan}
+ * where plan is the cleaned plan in publicPlan_ shape (with dates) for the
+ * preview, or null when there are errors.
+ */
+function validatePlan_(raw, pid) {
+  var errors = [];
+  var err = function (msg, line) { errors.push({ msg: msg, line: line || null }); };
+  raw = String(raw == null ? '' : raw);
+  if (!raw.trim()) return { errors: [{ msg: 'The plan is empty — paste the JSON from Claude.', line: null }], plan: null };
+  if (raw.length > 300000) return { errors: [{ msg: 'The plan is too long (over 300,000 characters).', line: null }], plan: null };
+
+  /* Claude sometimes wraps JSON in ``` fences; take what is between them. */
+  var body = raw.replace(/^\s*```(?:json)?\s*\n?/i, '').replace(/\n?\s*```\s*$/, '');
+  var offset = raw.indexOf(body);
+  var p;
+  try { p = JSON.parse(body); }
+  catch (e) {
+    var m = /position (\d+)/.exec(String(e.message)) || null;
+    var ln = /line (\d+)/.exec(String(e.message));
+    err('This is not valid JSON: ' + String(e.message).replace(/^SyntaxError:\s*/, ''),
+        ln ? Number(ln[1]) : (m ? lineAt_(raw, Number(m[1]) + offset) : null));
+    return { errors: errors, plan: null };
+  }
+  if (!p || typeof p !== 'object' || Array.isArray(p)) return { errors: [{ msg: 'The plan must be one JSON object { … }.', line: 1 }], plan: null };
+
+  var findLine = function (needle, nth) {
+    var at = -1;
+    for (var i = 0; i <= (nth || 0); i++) { at = raw.indexOf(needle, at + 1); if (at < 0) return null; }
+    return lineAt_(raw, at);
+  };
+
+  if (p.format !== 'ayw-plan-v1') err('"format" must be "ayw-plan-v1".', findLine('"format"'));
+  if (String(p.participant_id || '').toUpperCase() !== pid) err('"participant_id" must be "' + pid + '" (the participant you are editing).', findLine('"participant_id"'));
+  var weeks = Number(p.weeks);
+  if (!(Math.floor(weeks) === weeks && weeks >= 1 && weeks <= 52)) err('"weeks" must be a whole number from 1 to 52.', findLine('"weeks"'));
+
+  var start = '';
+  if (p.start_date !== undefined && p.start_date !== null && p.start_date !== '') {
+    start = String(p.start_date);
+    var n = dayNum_(start);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !isFinite(n) || isoOfDay_(n) !== start) {
+      err('"start_date" must be a real date written YYYY-MM-DD, or left out.', findLine('"start_date"'));
+      start = '';
+    }
+  }
+
+  var bi = function (o, where, max, required, line) {
+    if (o === undefined || o === null || o === '') {
+      if (required) err(where + ': Arabic text is required.', line);
+      return { ar: '', en: '' };
+    }
+    if (typeof o === 'string') o = { ar: o };
+    if (typeof o !== 'object') { err(where + ' must be {"ar": "…", "en": "…"}.', line); return { ar: '', en: '' }; }
+    var ar = stripHtml_(o.ar).trim(), en = stripHtml_(o.en).trim();
+    if (required && !ar) err(where + ': Arabic text is required.', line);
+    if (ar.length > max) err(where + ': Arabic is ' + ar.length + ' characters; the limit is ' + max + '.', line);
+    if (en.length > max) err(where + ': English is ' + en.length + ' characters; the limit is ' + max + '.', line);
+    return { ar: ar.slice(0, max), en: en.slice(0, max) };
+  };
+  var title = bi(p.title, 'Plan title', 80, true, findLine('"title"'));
+  var note = bi(p.coach_note, 'Coach note', 1000, false, findLine('"coach_note"'));
+
+  var list = p.sessions;
+  if (!Array.isArray(list) || !list.length) {
+    err('"sessions" must be a list with at least one session.', findLine('"sessions"'));
+    list = [];
+  }
+  if (list.length > 400) err('A plan can have at most 400 sessions; this one has ' + list.length + '.', findLine('"sessions"'));
+
+  var seen = {}, clean = [];
+  var numOrNull = function (v, max, label, where, line) {
+    if (v === null || v === undefined || v === '') return null;
+    var x = Number(v);
+    if (!isFinite(x) || x < 0 || x > max) { err(where + ': "' + label + '" must be a number from 0 to ' + max + ', or null.', line); return null; }
+    return Math.round(x * 10) / 10;
+  };
+  list.slice(0, 400).forEach(function (s, i) {
+    var line = findLine('"session_id"', i);
+    var where = 'Session ' + (i + 1) + (s && s.session_id ? ' (' + s.session_id + ')' : '');
+    if (!s || typeof s !== 'object') { err(where + ' is not an object.', line); return; }
+    var id = String(s.session_id || '');
+    if (!/^w\d{1,2}d[1-7](-\d)?$/.test(id)) err(where + ': "session_id" must look like w1d1 (or w1d1-2 for a second session that day).', line);
+    else if (seen[id]) err(where + ': "session_id" ' + id + ' is used twice.', line);
+    seen[id] = true;
+    var week = Number(s.week), day = Number(s.day);
+    if (!(Math.floor(week) === week && week >= 1 && week <= (weeks || 52))) err(where + ': "week" must be 1 to ' + (weeks || '"weeks"') + '.', line);
+    if (!(Math.floor(day) === day && day >= 1 && day <= 7)) err(where + ': "day" must be 1 to 7.', line);
+    var type = String(s.type || '');
+    if (SESSION_TYPES.indexOf(type) === -1) err(where + ': "type" must be one of ' + SESSION_TYPES.join(', ') + '.', line);
+    var intensity = s.target_intensity === undefined || s.target_intensity === null || s.target_intensity === '' ? null : String(s.target_intensity);
+    if (intensity !== null && INTENSITIES.indexOf(intensity) === -1) err(where + ': "target_intensity" must be easy, moderate, hard, race or null.', line);
+    var reps = s.target_reps === undefined || s.target_reps === null || s.target_reps === '' ? null : stripHtml_(s.target_reps).slice(0, 40);
+    clean.push({
+      session_id: id, week: week, day: day, order: i, type: type,
+      title: bi(s.title, where + ' title', 80, true, line),
+      details: bi(s.details, where + ' details', 600, type !== 'rest', line),
+      target_duration_min: numOrNull(s.target_duration_min, 600, 'target_duration_min', where, line),
+      target_distance_km: numOrNull(s.target_distance_km, 500, 'target_distance_km', where, line),
+      target_intensity: intensity, target_reps: reps
+    });
+  });
+  if (errors.length) return { errors: errors, plan: null };
+
+  var plan = {
+    plan_id: '(preview)', version: 0, title: title, start_date: start, weeks: weeks, coach_note: note,
+    published_at: nowIso_(), sessions: clean
+  };
+  /* Dates exactly as the tracker will compute them after publishing. */
+  var built = buildPlan_({ plan_id: '(preview)', version: 0, title: biCell_(title), start_date: start, weeks: weeks,
+                           coach_note: biCell_(note), published_at: plan.published_at, status: 'published' },
+    clean.map(function (s) {
+      return { plan_id: '(preview)', session_id: s.session_id, week: s.week, day: s.day, order: s.order, type: s.type,
+               title: biCell_(s.title), details: biCell_(s.details), target_duration_min: s.target_duration_min,
+               target_distance_km: s.target_distance_km, target_intensity: s.target_intensity || '', target_reps: s.target_reps || '' };
+    }));
+  return { errors: [], plan: built, sessions: clean, title: title, note: note, start: start, weeks: weeks };
+}
+
+function handleCoachPlanValidate(body) {
+  var a = auth_(body, 'coach');
+  if (a.reply) return a.reply;
+  var pid = clean_(body.participant_id, 16).toUpperCase();
+  if (!submissionOf_(pid)) return fail_('not_found');
+  var v = validatePlan_(body.plan_json, pid);
+  if (v.errors.length) return json({ ok: true, valid: false, errors: v.errors });
+  return json({ ok: true, valid: true, errors: [], plan: publicPlan_(v.plan),
+                stats: planStats_(v.plan, logsOf_(pid)), sessions: v.sessions.length });
+}
+
+/* -------------------------------------------------------------- publish */
+function handleCoachPlanPublish(body) {
+  var a = auth_(body, 'coach');
+  if (a.reply) return a.reply;
+  var pid = clean_(body.participant_id, 16).toUpperCase();
+  var sub = submissionOf_(pid);
+  if (!sub) return fail_('not_found');
+  var v = validatePlan_(body.plan_json, pid);
+  if (v.errors.length) return fail_('invalid_plan', { errors: v.errors });
+  var cleared = body.clearance_confirmed === true || isTrue_(body.clearance_confirmed);
+  if (isTrue_(sub.needs_medical_clearance) && !cleared) return fail_('clearance_required');
+
+  return withLock_(function () {
+    var user = findUser_('participant_id', pid);
+    if (!user) return fail_('no_account');
+    var plans = readRows_(SHEET_PLANS).filter(function (p) { return String(p.participant_id) === pid; });
+    var version = plans.reduce(function (m, p) { return Math.max(m, Number(p.version) || 0); }, 0) + 1;
+    var planId = pid + '-v' + version;
+    plans.forEach(function (p) {
+      if (String(p.status) === 'published') updateRow_(SHEET_PLANS, p._row, { status: 'archived' });
+    });
+    var now = nowIso_();
+    writeRow_(SHEET_PLANS, {
+      plan_id: planId, participant_id: pid, version: version, title: biCell_(v.title), start_date: v.start,
+      weeks: v.weeks, status: 'published', coach_note: biCell_(v.note), created_at: now, published_at: now,
+      clearance_confirmed: cleared ? 'TRUE' : 'FALSE'
+    });
+    appendRows_(SHEET_PLAN_SESSIONS, v.sessions.map(function (s) {
+      return {
+        plan_id: planId, participant_id: pid, session_id: s.session_id, week: s.week, day: s.day,
+        date: v.start ? isoOfDay_(dayNum_(v.start) + (s.week - 1) * 7 + (s.day - 1)) : '',
+        order: s.order, title: biCell_(s.title), type: s.type, details: biCell_(s.details),
+        target_duration_min: s.target_duration_min, target_distance_km: s.target_distance_km,
+        target_intensity: s.target_intensity || '', target_reps: s.target_reps || ''
+      };
+    }));
+    setStatus_(user, sub, 'active');
+    var first = firstName_(user.name);
+    var msg = 'أهلاً يا ' + first + '! برنامجك في عاش يا وحش جاهز 💪\n' +
+              'ادخل على متابعتك من هنا: ' + siteUrl_(body.site_url) + 'login.html\n' +
+              'اسم المستخدم: رقم موبايلك ' + String(user.username);
+    return json({ ok: true, plan_id: planId, version: version, whatsapp_url: waLink_(user.username, msg) });
+  });
+}
+
+/** Users.status is the truth; Submissions.status follows it. Caller holds the lock. */
+function setStatus_(user, sub, status) {
+  updateRow_(SHEET_USERS, user._row, { status: status });
+  if (sub && STATUS_MIRROR[status]) {
+    getSheet_(SHEET_MAIN, HEADERS).getRange(sub._row, HEADERS.indexOf('status') + 1).setValue(STATUS_MIRROR[status]);
+  }
+}
+
+/* ----------------------------------------------------------- reset link */
+function handleCoachResetLink(body) {
+  var a = auth_(body, 'coach');
+  if (a.reply) return a.reply;
+  var pid = clean_(body.participant_id, 16).toUpperCase();
+  return withLock_(function () {
+    var user = findUser_('participant_id', pid);
+    if (!user) return fail_('no_account');
+    /* A new link makes every older unused one useless. */
+    var now = nowIso_();
+    readRows_(SHEET_RESETS).forEach(function (r) {
+      if (String(r.participant_id) === pid && !r.used_at) updateRow_(SHEET_RESETS, r._row, { used_at: now });
+    });
+    var token = randomToken_();
+    var exp = isoIn_(AUTH.RESET_HOURS * 36e5);
+    writeRow_(SHEET_RESETS, { token_hash: sha256Hex_(token), participant_id: pid, created_by: 'coach',
+                              created_at: now, expires_at: exp, used_at: '' });
+    logAuth_(user.username, 'reset_created', 'ok', 'by coach');
+    var url = siteUrl_(body.site_url) + 'reset.html#t=' + token;
+    var msg = 'أهلاً يا ' + firstName_(user.name) + '، ده لينك تعمل بيه كلمة سر جديدة لحسابك في عاش يا وحش.\n' +
+              'شغال مرة واحدة بس، ولمدة 48 ساعة:\n' + url;
+    return json({ ok: true, reset_url: url, expires_at: exp, whatsapp_url: waLink_(user.username, msg) });
+  });
+}
+
+/* ---------------------------------------------- status, notes, unlock */
+function handleCoachUpdateUser(body) {
+  var a = auth_(body, 'coach');
+  if (a.reply) return a.reply;
+  var pid = clean_(body.participant_id, 16).toUpperCase();
+  return withLock_(function () {
+    var sub = submissionOf_(pid);
+    if (!sub) return fail_('not_found');
+    var user = findUser_('participant_id', pid);
+    if (body.status !== undefined) {
+      var st = clean_(body.status, 20);
+      if (USER_STATUSES.indexOf(st) === -1) return fail_('invalid');
+      if (!user) return fail_('no_account');
+      setStatus_(user, sub, st);
+    }
+    if (body.coach_note !== undefined) {
+      getSheet_(SHEET_MAIN, HEADERS).getRange(sub._row, HEADERS.indexOf('coach_notes') + 1)
+        .setValue(asCell_(clean_(body.coach_note, 2000)));
+    }
+    if (body.unlock) {
+      if (!user) return fail_('no_account');
+      updateRow_(SHEET_USERS, user._row, { failed_count: 0, locked_until: '' });
+      try { CacheService.getScriptCache().remove('ulock_' + sha256Hex_(String(user.username)).slice(0, 20)); } catch (e) { /* none */ }
+      logAuth_(user.username, 'unlock', 'ok', 'by coach');
+    }
+    var u = findUser_('participant_id', pid);
+    var f = userFlags_(u);
+    return json({ ok: true, status: u ? String(u.status) : 'no_account', locked: f.locked,
+                  coach_notes: String(fromCell_(submissionOf_(pid).coach_notes) || '') });
   });
 }
 
@@ -1988,7 +2574,7 @@ function deleteParticipant(pid) {
     var removed = {};
     removed[SHEET_MAIN] = deleteRowsWhere_(ss.getSheetByName(SHEET_MAIN), HEADERS, 'participant_id', isPid);
     removed[SHEET_CHECKINS] = deleteRowsWhere_(ss.getSheetByName(SHEET_CHECKINS), CHECKIN_HEADERS, 'participant_id', isPid);
-    [SHEET_USERS, SHEET_SESSIONS, SHEET_RESETS, SHEET_PLANS, SHEET_PLAN_SESSIONS, SHEET_LOGS].forEach(function (name) {
+    [SHEET_USERS, SHEET_SESSIONS, SHEET_RESETS, SHEET_PLANS, SHEET_PLAN_SESSIONS, SHEET_LOGS, SHEET_PROGRESS].forEach(function (name) {
       removed[name] = deleteRowsWhere_(ss.getSheetByName(name), TABS[name].headers, 'participant_id', isPid);
     });
     if (user) {

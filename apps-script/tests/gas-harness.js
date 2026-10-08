@@ -63,6 +63,15 @@ function makeSheet(name) {
         return api;
       },
       setValue(v) { return api.setValues([[v]]); },
+      clearContent() {
+        for (let i = 0; i < nr; i++) {
+          const row = rows[r - 1 + i];
+          if (row) for (let j = 0; j < nc; j++) row[c - 1 + j] = '';
+        }
+        /* Like Sheets, getLastRow() ignores rows left empty at the bottom. */
+        while (rows.length && rows[rows.length - 1].every((x) => x === '' || x === undefined)) rows.pop();
+        return api;
+      },
       setFormula() { return api; }, setNumberFormat() { return api; }, setDataValidation() { return api; },
       setFontWeight() { return api; }, setFontColor() { return api; }, setBackground() { return api; },
       setVerticalAlignment() { return api; }, setNote() { return api; }
