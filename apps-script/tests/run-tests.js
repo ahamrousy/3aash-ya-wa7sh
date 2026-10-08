@@ -43,8 +43,9 @@ section('1. Router and Phase 1 regressions');
 
   const ck = { type: 'checkin', submission_token: 'ck', elapsed_ms: 60000, hp: '', participant_id: r.participant_id,
                whatsapp: '+20 1012345678', weight_kg: '91', sessions_done: '3', energy: '4' };
-  check('legacy check-in (ID + WhatsApp) still works', post(S, ck).ok === true);
-  check('legacy check-in still needs 20 s', post(S, Object.assign({}, ck, { submission_token: 'ck2', elapsed_ms: 100 })).error === 'too_fast');
+  check('old ID + WhatsApp check-in is refused: it needs a session now', post(S, ck).error === 'session_expired');
+  check('a check-in without a session still has the 20-second gate',
+    post(S, Object.assign({}, ck, { submission_token: 'ck2', elapsed_ms: 100 })).error === 'too_fast');
   check('check-in carrying a session skips the 20-second gate',
     post(S, Object.assign({}, ck, { submission_token: 'ck3', elapsed_ms: 100, session: 'abc' })).error !== 'too_fast');
   check('check-in honeypot still applies', post(S, Object.assign({}, ck, { submission_token: 'ck4', hp: 'bot' })).error === 'spam');
@@ -462,6 +463,96 @@ section('16. Reset links');
                                created_at: '', expires_at: new Date(Date.now() - 1000).toISOString(), used_at: '' });
   check('an expired link is refused', post(S, { type: 'reset_verify', token: old }).error === 'reset_invalid');
   check('a malformed token is refused', post(S, { type: 'reset_verify', token: '../etc' }).error === 'reset_invalid');
+}
+
+/* ----------------------------------------------------- steps 3–4: tracker */
+/** A participant with a full session (password already changed). */
+function member(S, phone, token) {
+  const r = post(S, Object.assign({}, ADULT, { submission_token: token || ('t' + phone), whatsapp: '+20 ' + phone }));
+  const first = post(S, { type: 'login', username: '+20' + phone, password: PROPS.DEFAULT_PASSWORD });
+  const full = post(S, { type: 'change_password', session: first.session, current_password: PROPS.DEFAULT_PASSWORD, new_password: 'Wa7sh!2026' });
+  return { pid: r.participant_id, session: full.session, restricted: first.session };
+}
+/** A plan typed by hand into Plans + PlanSessions, as in build step 3. */
+function handPlan(S, pid, start) {
+  S.writeRow_('Plans', { plan_id: 'hand-' + pid, participant_id: pid, version: 1, title: 'برنامج تجريبي', start_date: start || '',
+    weeks: 2, status: 'published', coach_note: 'ابدأ هادي', created_at: '', published_at: new Date().toISOString(), clearance_confirmed: 'FALSE' });
+  [['w1d1', 1, 1, 'run'], ['w1d3', 1, 3, 'strength'], ['w1d5', 1, 5, 'rest'], ['w2d1', 2, 1, 'run'], ['w2d3', 2, 3, 'walk']]
+    .forEach(([id, week, day, type], i) => S.writeRow_('PlanSessions', { plan_id: 'hand-' + pid, participant_id: pid, session_id: id,
+      week, day, order: i, title: 'حصة ' + id, type, details: 'تفاصيل', target_duration_min: 30 }));
+}
+
+section('17. Tracker: me');
+{
+  const S = load({ props: PROPS });
+  const A = member(S, '1011111111');
+  const me0 = post(S, { type: 'me', session: A.session });
+  check('before a plan: waiting state (plan null, awaiting_plan)', me0.ok && me0.plan === null && me0.status === 'awaiting_plan' && me0.stats === null, me0);
+  check('me never returns BMI or waist-to-height', !/bmi|waist_to_height/i.test(JSON.stringify(me0)));
+  check('a restricted session cannot read the tracker', post(S, { type: 'me', session: A.restricted }).error === 'session_expired' ||
+    post(S, { type: 'me', session: member(S, '1022222222').restricted }).error === 'password_change_required');
+  check('a coach session is not a participant', post(S, { type: 'me', session: S.createSession_('COACH', 'coach', 'full').token }).error === 'forbidden');
+
+  const start = S.isoOfDay_(S.dayNum_(S.cairoDay_()) - 8);       // today is week 2, day 2
+  handPlan(S, A.pid, start);
+  const me = post(S, { type: 'me', session: A.session });
+  const w1 = me.plan.by_week[0].sessions, w2 = me.plan.by_week[1].sessions;
+  check('a hand-made plan shows, grouped by week', me.plan.weeks === 2 && w1.length === 3 && w2.length === 2, me.plan);
+  check('dates: w1d1 = start date, w2d3 = start + 9 days', w1[0].date === start && w2[1].date === S.isoOfDay_(S.dayNum_(start) + 9));
+  check('plain Arabic title reads as {ar, en:""}', me.plan.title.ar === 'برنامج تجريبي' && me.plan.title.en === '');
+  check('stats: week 2 of 2, 3 sessions planned so far (rest days excluded)',
+    me.stats.current_week === 2 && me.stats.planned_to_date === 3 && me.stats.adherence === 0, me.stats);
+
+  const B = load({ props: PROPS });
+  const nb = member(B, '1033333333');
+  handPlan(B, nb.pid, '');
+  const pb = post(B, { type: 'me', session: nb.session }).plan;
+  check('no start date: day 1 is a Saturday on or before today',
+    new Date(pb.start + 'T00:00:00Z').getUTCDay() === 6 && B.dayNum_(pb.start) <= B.dayNum_(B.cairoDay_()) && B.dayNum_(B.cairoDay_()) - B.dayNum_(pb.start) < 7, pb.start);
+}
+
+section('18. Tracker: log_session, stats, check-in, isolation');
+{
+  const S = load({ props: PROPS });
+  const A = member(S, '1011111111');
+  const start = S.isoOfDay_(S.dayNum_(S.cairoDay_()) - 8);
+  handPlan(S, A.pid, start);
+  const log = (b) => post(S, Object.assign({ type: 'log_session', session: A.session, submission_token: S.Utilities.getUuid() }, b));
+
+  const r1 = log({ session_id: 'w1d1', status: 'done', actual_duration_min: '32', actual_distance_km: '4.2', effort_1_10: '6', note: 'حلو' });
+  check('logging done returns the log and new stats', r1.ok && r1.log.status === 'done' && r1.log.actual_distance_km === 4.2 && r1.stats.done === 1 && r1.stats.adherence === 33, r1);
+  const r2 = log({ session_id: 'w1d3', status: 'partial' });
+  check('partial counts half: adherence (1 + ½) ÷ 3 = 50 %', r2.stats.adherence === 50, r2.stats);
+  const r3 = log({ session_id: 'w1d1', status: 'skipped', effort_1_10: '' });
+  check('editing a log updates it in place', r3.stats.skipped === 1 && r3.stats.done === 0 && table(S, 'SessionLogs').length === 2);
+  check('a rest day cannot be logged', log({ session_id: 'w1d5', status: 'done' }).error === 'invalid');
+  check('an unknown session cannot be logged', log({ session_id: 'w9d9', status: 'done' }).error === 'invalid');
+  check('a made-up status is refused', log({ session_id: 'w2d1', status: 'perfect' }).error === 'invalid');
+  check('effort outside 1–10 is dropped', log({ session_id: 'w2d1', status: 'done', effort_1_10: '42' }).log.effort_1_10 === null);
+
+  const tok = 'same-token';
+  log({ session_id: 'w2d3', status: 'done', submission_token: tok });
+  const dup = log({ session_id: 'w2d3', status: 'skipped', submission_token: tok });
+  check('a retried log (same token) changes nothing', dup.duplicate === true && dup.log.status === 'done');
+  check('a session logged early counts as planned', dup.stats.planned_to_date === 4, dup.stats);
+  log({ session_id: 'w1d1', status: 'done' }); log({ session_id: 'w1d3', status: 'done' });
+  check('streak: week 1 all done → 1, week 2 already done → 2', post(S, { type: 'me', session: A.session }).stats.streak === 2);
+
+  const ci = post(S, { type: 'checkin', session: A.session, submission_token: 'ci1', weight_kg: '90.5', waist_cm: '98',
+                       sessions_done: '3', energy: '4', notes: 'تمام', language_used: 'ar' });
+  check('check-in from the tracker is saved', ci.ok && ci.checkins.length === 1 && ci.checkins[0].weight_kg === 90.5, ci);
+  const row = table(S, 'Checkins')[0];
+  check('…with ID and username taken from the session', row.participant_id === A.pid && row.whatsapp === '+201011111111', row);
+  check('a retried check-in adds no row', post(S, { type: 'checkin', session: A.session, submission_token: 'ci1', weight_kg: '90',
+    sessions_done: '3', energy: '4' }).duplicate === true && table(S, 'Checkins').length === 1);
+  check('me returns the check-ins', post(S, { type: 'me', session: A.session }).checkins.length === 1);
+
+  const B = member(S, '1022222222');
+  const meB = post(S, { type: 'me', session: B.session, participant_id: A.pid });
+  check('B asking for A\'s ID in the body still gets only B', meB.participant_id === B.pid && meB.plan === null && meB.checkins.length === 0, meB);
+  check('B cannot log on A\'s plan', post(S, { type: 'log_session', session: B.session, participant_id: A.pid, session_id: 'w1d1', status: 'done' }).error === 'no_plan');
+  check('B\'s check-in lands under B', post(S, { type: 'checkin', session: B.session, participant_id: A.pid, submission_token: 'ci2',
+    weight_kg: '80', sessions_done: '1', energy: '3' }).ok && table(S, 'Checkins')[1].participant_id === B.pid);
 }
 
 console.log('\n================  ' + pass + ' passed, ' + fail + ' failed  ================\n');

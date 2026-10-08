@@ -184,7 +184,9 @@ var ROUTES = {
   change_password: handleChangePassword,
   logout:          handleLogout,
   reset_verify:    handleResetVerify,
-  reset_complete:  handleResetComplete
+  reset_complete:  handleResetComplete,
+  me:              handleMe,
+  log_session:     handleLogSession
 };
 
 function doPost(e) {
@@ -355,26 +357,21 @@ function handleIntake(body) {
 
 
 /* ===========================================================================
-   WEEKLY CHECK-IN  (Phase 2)
-   The participant proves who they are with ID + the WhatsApp number already on
-   their intake row. Nothing is ever read back to the browser.
+   WEEKLY CHECK-IN — sent from inside the signed-in tracker
+   Who it belongs to comes from the session, never from an ID or phone number
+   typed into the form. The old ID + WhatsApp page now redirects to login.
    ======================================================================== */
 function handleCheckin(body) {
-  var lock = LockService.getScriptLock();
-  try { lock.waitLock(20000); } catch (e) { return json({ ok: false, error: 'busy' }); }
+  var a = auth_(body, 'participant');
+  if (a.reply) return a.reply;
+  var pid = a.s.pid;
 
-  try {
+  return withLock_(function () {
     var token = clean_(body.submission_token, 60);
-    if (tokenSeen_(token, SHEET_CHECKINS)) return json({ ok: true, duplicate: true });
+    if (tokenSeen_(token, SHEET_CHECKINS)) return json({ ok: true, duplicate: true, checkins: checkinsOf_(pid, 12) });
 
-    var id = clean_(body.participant_id, 16).toUpperCase();
-    if (!/^AYW-\d{4}-\d{4}$/.test(id)) return json({ ok: false, error: 'no_match' });
-
-    var phone = coerce_(body.whatsapp, { type: 'phone' });
-    if (!phone) return json({ ok: false, error: 'no_match' });
-
-    var match = findParticipant_(id, phone);
-    if (!match) return json({ ok: false, error: 'no_match' });
+    var user = findUser_('participant_id', pid);
+    if (!user) return fail_('session_expired');
 
     var weight   = coerce_(body.weight_kg,     { type: 'num', min: 30, max: 250 });
     var waist    = coerce_(body.waist_cm,      { type: 'num', min: 50, max: 200 });
@@ -388,9 +385,9 @@ function handleCheckin(body) {
     var sheet = getSheet_(SHEET_CHECKINS, CHECKIN_HEADERS);
     appendRow_(sheet, CHECKIN_HEADERS, {
       timestamp: new Date(),
-      participant_id: id,
-      name: match.name,
-      whatsapp: phone,
+      participant_id: pid,
+      name: String(user.name),
+      whatsapp: String(user.username),
       weight_kg: weight,
       waist_cm: waist,
       sessions_done: sessions,
@@ -401,33 +398,9 @@ function handleCheckin(body) {
       submission_token: token
     }, CHECKIN_NUMERIC);
 
-    rememberToken_(token, id);
-    return json({ ok: true });
-
-  } finally {
-    lock.releaseLock();
-  }
-}
-
-/** Look up a participant by ID *and* phone. Returns null unless both match. */
-function findParticipant_(id, phone) {
-  var sheet = getSheet_(SHEET_MAIN, HEADERS);
-  var last  = sheet.getLastRow();
-  if (last < 2) return null;
-
-  var idCol    = HEADERS.indexOf('participant_id') + 1;
-  var phoneCol = HEADERS.indexOf('whatsapp') + 1;
-  var nameCol  = HEADERS.indexOf('name') + 1;
-
-  var values = sheet.getRange(2, 1, last - 1, HEADERS.length).getValues();
-  var wanted = digits_(phone);
-
-  for (var i = 0; i < values.length; i++) {
-    if (String(values[i][idCol - 1]).toUpperCase() !== id) continue;
-    if (digits_(String(values[i][phoneCol - 1])) !== wanted) continue;
-    return { row: i + 2, name: String(values[i][nameCol - 1]) };
-  }
-  return null;
+    rememberToken_(token, pid);
+    return json({ ok: true, checkins: checkinsOf_(pid, 12) });
+  });
 }
 
 
@@ -1638,6 +1611,238 @@ function handleResetComplete(body) {
     var sess = createSession_(pid, 'participant', 'full');
     logAuth_(user.username, 'reset_used', 'ok', '');
     return sessionReply_(sess, 'full', user);
+  });
+}
+
+
+/* ===========================================================================
+   PROGRAMS — reading a published plan, its dates and the progress numbers
+   -----------------------------------------------------------------------------
+   Text cells that come in two languages (title, details, coach note) hold
+   either {"ar":"…","en":"…"} from an import, or plain Arabic typed by hand
+   in the sheet. Both read the same way.
+   ======================================================================== */
+var SESSION_TYPES = ['run', 'walk', 'swim', 'bike', 'strength', 'mobility', 'cross', 'rest', 'other'];
+var INTENSITIES   = ['easy', 'moderate', 'hard', 'race'];
+var LOG_STATUSES  = ['done', 'partial', 'skipped'];
+
+function biText_(v) {
+  var s = String(v == null ? '' : v).trim();
+  if (s.charAt(0) === '{') {
+    try { var o = JSON.parse(s); return { ar: String(o.ar || ''), en: String(o.en || '') }; }
+    catch (e) { /* not JSON after all: plain text */ }
+  }
+  return { ar: s, en: '' };
+}
+function biCell_(o) { return o.en ? JSON.stringify({ ar: o.ar, en: o.en }) : o.ar; }
+
+/* Dates are handled as whole days, yyyy-MM-dd, in Cairo time. */
+function cairoDay_(d) { return Utilities.formatDate(d || new Date(), 'Africa/Cairo', 'yyyy-MM-dd'); }
+function dayNum_(iso) {
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+  return m ? Math.round(Date.UTC(+m[1], +m[2] - 1, +m[3]) / 864e5) : NaN;
+}
+function isoOfDay_(n) { return new Date(n * 864e5).toISOString().slice(0, 10); }
+/** A date cell typed by hand may arrive as a Date object or as text. */
+function dateCell_(v) {
+  if (v instanceof Date) return cairoDay_(v);
+  var s = String(v || '').trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : '';
+}
+function num_(v) { return v === '' || v === null || v === undefined || !isFinite(Number(v)) ? null : Number(v); }
+
+/** The participant's published plan with its sessions, or null. */
+function publishedPlan_(pid) {
+  var best = null;
+  readRows_(SHEET_PLANS).forEach(function (p) {
+    if (String(p.participant_id) !== pid || String(p.status) !== 'published' || !p.plan_id) return;
+    if (!best || Number(p.version) > Number(best.version)) best = p;
+  });
+  return best ? buildPlan_(best) : null;
+}
+
+/** Turn a Plans row (and its PlanSessions rows) into the plan object. */
+function buildPlan_(p) {
+  var planId = String(p.plan_id);
+  var startGiven = dateCell_(p.start_date);
+  /* No start date: day 1 is the Saturday on or before the day it was published. */
+  var start = startGiven;
+  if (!start) {
+    var pub = dayNum_(cairoDay_(p.published_at ? new Date(timeOf_(p.published_at) || Date.now()) : new Date()));
+    var weekday = new Date(pub * 864e5).getUTCDay();            // 0 Sun … 6 Sat
+    start = isoOfDay_(pub - ((weekday + 1) % 7));
+  }
+  var startN = dayNum_(start);
+  var sessions = readRows_(SHEET_PLAN_SESSIONS)
+    .filter(function (s) { return String(s.plan_id) === planId && s.session_id; })
+    .map(function (s) {
+      var week = Number(s.week) || 1, day = Number(s.day) || 1;
+      return {
+        session_id: String(s.session_id), week: week, day: day, order: Number(s.order) || 0,
+        date: isoOfDay_(startN + (week - 1) * 7 + (day - 1)),
+        type: SESSION_TYPES.indexOf(String(s.type)) === -1 ? 'other' : String(s.type),
+        title: biText_(s.title), details: biText_(s.details),
+        target_duration_min: num_(s.target_duration_min), target_distance_km: num_(s.target_distance_km),
+        target_intensity: INTENSITIES.indexOf(String(s.target_intensity)) === -1 ? null : String(s.target_intensity),
+        target_reps: String(s.target_reps || '') || null
+      };
+    })
+    .sort(function (a, b) { return a.week - b.week || a.day - b.day || a.order - b.order; });
+  return {
+    plan_id: planId, version: Number(p.version) || 1, title: biText_(p.title),
+    start_date: startGiven, start: start, weeks: Math.max(1, Number(p.weeks) || 1),
+    coach_note: biText_(p.coach_note), published_at: String(p.published_at || ''),
+    clearance_confirmed: isTrue_(p.clearance_confirmed), sessions: sessions
+  };
+}
+
+/** What the tracker shows: sessions grouped by week. */
+function publicPlan_(plan) {
+  var weeks = [];
+  for (var w = 1; w <= plan.weeks; w++) weeks.push({ week: w, sessions: [] });
+  plan.sessions.forEach(function (s) { if (weeks[s.week - 1]) weeks[s.week - 1].sessions.push(s); });
+  return { plan_id: plan.plan_id, version: plan.version, title: plan.title, start_date: plan.start_date,
+           start: plan.start, weeks: plan.weeks, coach_note: plan.coach_note, by_week: weeks };
+}
+
+/** A participant's logs, the latest row per session_id. */
+function logsOf_(pid, rows) {
+  var latest = {};
+  (rows || readRows_(SHEET_LOGS)).forEach(function (r) {
+    if (String(r.participant_id) === pid && r.session_id) latest[String(r.session_id)] = r;
+  });
+  return Object.keys(latest).map(function (k) { return latest[k]; });
+}
+
+function publicLog_(r) {
+  return {
+    session_id: String(r.session_id), plan_id: String(r.plan_id || ''), status: String(r.status),
+    actual_duration_min: num_(r.actual_duration_min), actual_distance_km: num_(r.actual_distance_km),
+    effort_1_10: num_(r.effort_1_10), note: String(r.note || ''),
+    updated_at: String(r.updated_at || r.logged_at || '')
+  };
+}
+
+/**
+ * Progress numbers. Adherence = (done + ½ partial) ÷ sessions planned up to
+ * today (rest days do not count; a session logged early counts as planned).
+ * Streak = weeks in a row with ≥ 80 % of their sessions done; the current
+ * week joins the streak once it reaches 80 %, and never breaks it before.
+ */
+function planStats_(plan, logs, today) {
+  var todayN = dayNum_(today || cairoDay_());
+  var startN = dayNum_(plan.start);
+  var byId = {};
+  logs.forEach(function (l) { byId[String(l.session_id)] = String(l.status); });
+
+  var planned = 0, score = 0, done = 0, partial = 0, skipped = 0, weekly = {};
+  plan.sessions.forEach(function (s) {
+    if (s.type === 'rest') return;
+    var st = byId[s.session_id];
+    var w = weekly[s.week] || (weekly[s.week] = { total: 0, score: 0 });
+    var pts = st === 'done' ? 1 : st === 'partial' ? 0.5 : 0;
+    w.total++; w.score += pts;
+    if (st === 'done') done++; else if (st === 'partial') partial++; else if (st === 'skipped') skipped++;
+    if (dayNum_(s.date) <= todayN || st) { planned++; score += pts; }
+  });
+
+  var started = todayN >= startN;
+  var current = started ? Math.min(plan.weeks, Math.floor((todayN - startN) / 7) + 1) : 0;
+  var good = function (wk) { var x = weekly[wk]; return x && x.total ? x.score / x.total >= 0.8 : null; };
+  var streak = 0;
+  if (current && good(current)) streak++;
+  for (var wk = current - 1; wk >= 1; wk--) {
+    var g = good(wk);
+    if (g === null) continue;                 // a week with only rest days neither counts nor breaks
+    if (!g) break;
+    streak++;
+  }
+  return {
+    current_week: current, weeks: plan.weeks, started: started, start: plan.start,
+    planned_to_date: planned, done: done, partial: partial, skipped: skipped,
+    adherence: planned ? Math.min(100, Math.round(score / planned * 100)) : null, streak: streak
+  };
+}
+
+/** The participant's own last n check-ins, oldest first. */
+function checkinsOf_(pid, n) {
+  var sh = getSheet_(SHEET_CHECKINS, CHECKIN_HEADERS);
+  var last = sh.getLastRow();
+  if (last < 2) return [];
+  var H = CHECKIN_HEADERS;
+  var out = sh.getRange(2, 1, last - 1, H.length).getValues()
+    .filter(function (r) { return String(r[H.indexOf('participant_id')]).toUpperCase() === pid; })
+    .map(function (r) {
+      var ts = r[H.indexOf('timestamp')];
+      return {
+        date: ts instanceof Date ? cairoDay_(ts) : String(ts).slice(0, 10),
+        weight_kg: num_(r[H.indexOf('weight_kg')]), waist_cm: num_(r[H.indexOf('waist_cm')]),
+        sessions_done: num_(r[H.indexOf('sessions_done')]), energy: num_(r[H.indexOf('energy')]),
+        best_effort: String(fromCell_(r[H.indexOf('best_effort')]) || ''), notes: String(fromCell_(r[H.indexOf('notes')]) || '')
+      };
+    });
+  return n ? out.slice(-n) : out;
+}
+
+
+/* ===========================================================================
+   TRACKER ROUTES — me, log_session (check-in is handleCheckin above)
+   Every query here is scoped to the session's participant_id.
+   ======================================================================== */
+function handleMe(body) {
+  var a = auth_(body, 'participant');
+  if (a.reply) return a.reply;
+  var pid = a.s.pid;
+  var user = findUser_('participant_id', pid);
+  if (!user) return fail_('session_expired');
+  var plan = publishedPlan_(pid);
+  var logs = logsOf_(pid);
+  return json({
+    ok: true, participant_id: pid, name: firstName_(user.name), status: String(user.status),
+    today: cairoDay_(), plan: plan ? publicPlan_(plan) : null, logs: logs.map(publicLog_),
+    stats: plan ? planStats_(plan, logs) : null, checkins: checkinsOf_(pid, 12)
+  });
+}
+
+function handleLogSession(body) {
+  var a = auth_(body, 'participant');
+  if (a.reply) return a.reply;
+  var pid = a.s.pid;
+  var token = clean_(body.submission_token, 60);
+  var cache = CacheService.getScriptCache();
+  var seen = token ? cache.get('logtok_' + token) : null;
+
+  return withLock_(function () {
+    var plan = publishedPlan_(pid);
+    if (!plan) return fail_('no_plan');
+    var sid = clean_(body.session_id, 12);
+    var ps = plan.sessions.filter(function (s) { return s.session_id === sid; })[0];
+    if (!ps || ps.type === 'rest') return fail_('invalid');
+
+    if (!seen) {
+      var status = coerce_(body.status, { type: 'enum', values: LOG_STATUSES });
+      if (!status) return fail_('invalid');
+      var patch = {
+        plan_id: plan.plan_id, status: status,
+        actual_duration_min: coerce_(body.actual_duration_min, { type: 'int', min: 0, max: 600 }),
+        actual_distance_km: coerce_(body.actual_distance_km, { type: 'num', min: 0, max: 500 }),
+        effort_1_10: coerce_(body.effort_1_10, { type: 'int', min: 1, max: 10 }),
+        note: clean_(body.note, 300), updated_at: nowIso_()
+      };
+      var existing = null;
+      readRows_(SHEET_LOGS).forEach(function (r) {
+        if (String(r.participant_id) === pid && String(r.session_id) === sid) existing = r;
+      });
+      if (existing) updateRow_(SHEET_LOGS, existing._row, patch);
+      else {
+        patch.log_id = Utilities.getUuid(); patch.participant_id = pid; patch.session_id = sid; patch.logged_at = patch.updated_at;
+        writeRow_(SHEET_LOGS, patch);
+      }
+      if (token) { try { cache.put('logtok_' + token, '1', 21600); } catch (e) { /* best effort */ } }
+    }
+    var logs = logsOf_(pid);
+    var mine = logs.filter(function (l) { return String(l.session_id) === sid; })[0];
+    return json({ ok: true, duplicate: !!seen, log: mine ? publicLog_(mine) : null, stats: planStats_(plan, logs) });
   });
 }
 

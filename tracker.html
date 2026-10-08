@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-i18n-doc="trk.doc">متابعتي — عاش يا وحش</title>
+<meta name="description" content="متابعتي — عاش يا وحش">
+<meta name="theme-color" content="#394F9F">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="styles.css?v=4">
+<script>try{if(matchMedia('(prefers-reduced-motion: no-preference)').matches)document.documentElement.classList.add('motion')}catch(e){}</script>
+<link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+</head>
+<body>
+
+<a class="skip" href="#main" data-i18n="skip.link">تخطَّ للمحتوى</a>
+
+<header class="site-header">
+  <div class="wrap site-header__in">
+    <a class="brand" href="index.html">
+      <img class="brand__logo" src="assets/logo-sm.png" width="360" height="207"
+           alt="عاش يا وحش" data-i18n-alt="brand.name">
+      <small class="brand__tag" data-i18n="brand.tagline">ناس مننا مكملة في التغيير للأحسن</small>
+    </a>
+    <button type="button" class="hdr-link" id="trk-logout" data-i18n="trk.logout">خروج</button>
+    <button type="button" class="lang" data-lang-toggle data-i18n-aria="lang.switch.aria">
+      <svg class="lang__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>
+      </svg>
+      <span data-i18n="lang.switch">English</span>
+    </button>
+  </div>
+</header>
+
+<main id="main" class="wrap trk">
+
+  <p id="trk-loading" class="trk__loading" role="status" data-i18n="trk.loading">بنجيب برنامجك...</p>
+
+  <div id="trk-error" class="callout callout--error" hidden role="alert">
+    <p id="trk-error-body"></p>
+    <button type="button" id="trk-retry" class="btn btn--primary" data-i18n="fail.retry"></button>
+  </div>
+
+  <div id="trk-app" hidden>
+    <header class="trk__head">
+      <h1 id="trk-hello" class="trk__hello" tabindex="-1"></h1>
+      <p id="trk-title" class="trk__title"></p>
+    </header>
+
+    <!-- Before the coach publishes a plan -->
+    <section id="trk-wait" class="wait" hidden aria-labelledby="trk-wait-h">
+      <span class="wait__art" aria-hidden="true">
+        <svg viewBox="0 0 64 64" focusable="false"><rect x="12" y="10" width="40" height="46" rx="6"/><path d="M24 10V6h16v4"/><path d="M21 26h22M21 34h22M21 42h14"/><circle cx="48" cy="48" r="10" class="wait__clock"/><path d="M48 43v5l3 2" class="wait__clock"/></svg>
+      </span>
+      <h2 id="trk-wait-h" data-i18n="trk.wait.title"></h2>
+      <p data-i18n="trk.wait.body"></p>
+      <p class="wait__eta" data-cfg="responseTime"></p>
+    </section>
+
+    <!-- The program -->
+    <section id="trk-plan" hidden aria-labelledby="trk-plan-h">
+      <h2 id="trk-plan-h" class="sr-only" data-i18n="trk.plan.h"></h2>
+      <div id="trk-note" class="callout callout--coach" hidden>
+        <div>
+          <p class="callout__title" data-i18n="trk.note.h"></p>
+          <p id="trk-note-body"></p>
+        </div>
+      </div>
+      <div id="trk-view"></div>
+    </section>
+
+    <!-- Weekly check-in -->
+    <section id="trk-checkin" class="ci" aria-labelledby="trk-ci-h">
+      <h2 id="trk-ci-h" data-i18n="trk.ci.title"></h2>
+      <p class="ci__lead" data-i18n="trk.ci.lead"></p>
+
+      <div id="trk-trend" class="trend" hidden>
+        <figure class="trend__fig" id="trk-trend-weight"></figure>
+        <figure class="trend__fig" id="trk-trend-waist"></figure>
+      </div>
+
+      <form id="checkin" class="form-card" novalidate autocomplete="off">
+        <div class="ci__row">
+          <div class="field" data-field="weight_kg">
+            <label class="field__label" for="ci-weight"><span data-i18n="ci.weight.label"></span><span class="req" aria-hidden="true">*</span></label>
+            <input class="input" id="ci-weight" type="text" inputmode="decimal" aria-describedby="e-ci-weight_kg" aria-invalid="false">
+            <p class="field__err" id="e-ci-weight_kg" role="alert"></p>
+          </div>
+          <div class="field" data-field="waist_cm">
+            <label class="field__label" for="ci-waist"><span data-i18n="ci.waist.label"></span></label>
+            <input class="input" id="ci-waist" type="text" inputmode="decimal" aria-describedby="e-ci-waist_cm" aria-invalid="false">
+            <p class="field__err" id="e-ci-waist_cm" role="alert"></p>
+          </div>
+        </div>
+        <div class="field" data-field="sessions_done">
+          <label class="field__label" for="ci-sessions"><span data-i18n="ci.sessions.label"></span><span class="req" aria-hidden="true">*</span></label>
+          <input class="input" id="ci-sessions" type="text" inputmode="numeric" maxlength="2" aria-describedby="e-ci-sessions_done" aria-invalid="false">
+          <p class="field__err" id="e-ci-sessions_done" role="alert"></p>
+        </div>
+        <div class="field" data-field="best_effort">
+          <label class="field__label" for="ci-best"><span data-i18n="ci.best.label"></span></label>
+          <input class="input" id="ci-best" type="text" maxlength="120" data-i18n-ph="ci.best.ph">
+        </div>
+        <fieldset class="field field--group" data-field="energy">
+          <legend class="field__label"><span data-i18n="ci.energy.label"></span><span class="req" aria-hidden="true">*</span></legend>
+          <div class="scale" id="ci-energy"></div>
+          <p class="scale__ends"><span data-i18n="ci.energy.1"></span><span data-i18n="ci.energy.5"></span></p>
+          <p class="field__err" id="e-ci-energy" role="alert"></p>
+        </fieldset>
+        <div class="field" data-field="notes">
+          <label class="field__label" for="ci-notes"><span data-i18n="ci.notes.label"></span></label>
+          <textarea class="input input--area" id="ci-notes" rows="3" maxlength="500" data-i18n-ph="ci.notes.ph"></textarea>
+        </div>
+        <div id="ci-error" class="callout callout--error" hidden role="alert"><p id="ci-error-body"></p></div>
+        <p id="ci-done" class="callout callout--ok" hidden role="status" tabindex="-1" data-i18n="ci.done.body"></p>
+        <button type="submit" id="ci-submit" class="btn btn--primary btn--lg" data-i18n="ci.submit"></button>
+      </form>
+    </section>
+  </div>
+
+  <!-- Logging one session: a bottom sheet -->
+  <dialog id="sheet" class="sheet" aria-labelledby="sheet-title">
+    <form id="sheet-form" class="sheet__in" novalidate>
+      <header class="sheet__head">
+        <p class="sheet__day" id="sheet-day"></p>
+        <h2 class="sheet__title" id="sheet-title"></h2>
+        <p class="sheet__tgt" id="sheet-tgt"></p>
+      </header>
+
+      <fieldset class="field field--group" data-field="status">
+        <legend class="field__label" data-i18n="trk.log.status"></legend>
+        <div class="chips sheet__status">
+          <input class="chip__input" type="radio" name="status" id="st-done" value="done"><label class="chip chip--done" for="st-done" data-i18n="pv.st.done"></label>
+          <input class="chip__input" type="radio" name="status" id="st-partial" value="partial"><label class="chip chip--partial" for="st-partial" data-i18n="pv.st.partial"></label>
+          <input class="chip__input" type="radio" name="status" id="st-skipped" value="skipped"><label class="chip chip--skipped" for="st-skipped" data-i18n="pv.st.skipped"></label>
+        </div>
+        <p class="field__err" id="e-status" role="alert"></p>
+      </fieldset>
+
+      <div class="ci__row">
+        <div class="field" data-field="actual_duration_min">
+          <label class="field__label" for="lg-min"><span data-i18n="trk.log.min"></span> <small class="opt" data-i18n="common.optional"></small></label>
+          <input class="input" id="lg-min" type="text" inputmode="numeric" maxlength="3" aria-describedby="e-actual_duration_min">
+          <p class="field__err" id="e-actual_duration_min" role="alert"></p>
+        </div>
+        <div class="field" data-field="actual_distance_km">
+          <label class="field__label" for="lg-km"><span data-i18n="trk.log.km"></span> <small class="opt" data-i18n="common.optional"></small></label>
+          <input class="input" id="lg-km" type="text" inputmode="decimal" maxlength="5" aria-describedby="e-actual_distance_km">
+          <p class="field__err" id="e-actual_distance_km" role="alert"></p>
+        </div>
+      </div>
+
+      <fieldset class="field field--group">
+        <legend class="field__label"><span data-i18n="trk.log.effort"></span> <small class="opt" data-i18n="common.optional"></small></legend>
+        <div class="scale scale--10" id="lg-effort"></div>
+        <p class="scale__ends"><span data-i18n="trk.log.effort.1"></span><span data-i18n="trk.log.effort.10"></span></p>
+      </fieldset>
+
+      <div class="field">
+        <label class="field__label" for="lg-note"><span data-i18n="trk.log.note"></span> <small class="opt" data-i18n="common.optional"></small></label>
+        <textarea class="input input--area" id="lg-note" rows="2" maxlength="300" data-i18n-ph="trk.log.note.ph"></textarea>
+        <p class="counter" id="lg-note-count" aria-live="polite"></p>
+      </div>
+
+      <div class="sheet__actions">
+        <button type="submit" class="btn btn--primary" data-i18n="trk.log.save"></button>
+        <button type="button" class="btn btn--ghost" id="sheet-cancel" data-i18n="trk.log.cancel"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden>
+    <span id="toast-msg"></span>
+    <button type="button" class="btn btn--link" id="toast-retry" hidden data-i18n="fail.retry"></button>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <nav class="site-footer__nav" aria-label="footer">
+      <a href="change-password.html" data-i18n="trk.changepw">غيّر كلمة السر</a>
+      <a href="privacy.html" data-i18n="footer.privacy">سياسة الخصوصية</a>
+    </nav>
+    <p class="site-footer__note" data-i18n="footer.made"></p>
+    <p class="site-footer__rights">© <span id="year"></span> <span data-i18n="footer.rights"></span></p>
+  </div>
+</footer>
+
+<script src="config.js?v=4"></script>
+<script src="i18n.js?v=4"></script>
+<script src="common.js?v=4"></script>
+<script src="plan-view.js?v=4"></script>
+<script src="tracker.js?v=4"></script>
+</body>
+</html>
