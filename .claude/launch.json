@@ -6,6 +6,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "5178"],
       "port": 5178
+    },
+    {
+      "name": "ayw-dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["apps-script/tests/dev-server.js"],
+      "port": 8787
     }
   ]
 }

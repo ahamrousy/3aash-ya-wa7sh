@@ -12,9 +12,11 @@ Test rows are real rows. Give the test people obviously fake names
 
 - [ ] `config.js` → `endpoint` is the real `/exec` URL, not the placeholder
 - [ ] `config.js` → `contactWhatsapp` and `contactEmail` are addresses you actually read
-- [ ] `Code.gs` → `COACH_EMAIL` is your address
+- [ ] Script Properties: `COACH_EMAIL` = your address, `DEFAULT_PASSWORD` = `12345678`, `PEPPER` exists
 - [ ] Opening the `/exec` URL in a browser shows `{"ok":true,…,"ready":true}`
-- [ ] The sheet has three tabs: `Submissions`, `Checkins`, `Dashboard`
+- [ ] The sheet has the tabs `Submissions`, `Checkins`, `Dashboard`, `Users`, `Sessions`,
+      `ResetTokens`, `Plans`, `PlanSessions`, `SessionLogs`, `AuthLog`, `Progress`
+- [ ] No cell in `Submissions` → `whatsapp` shows `#ERROR!`
 - [ ] `Submissions` row 1 is frozen, bold, and the `status` column is a dropdown
 
 ---
@@ -191,27 +193,54 @@ Use a real phone if you can; the browser's device mode is a second best.
 
 ---
 
-## N. The weekly check-in (Phase 2)
+## N. Accounts, tracker and coach console (Phase 3)
 
-- [ ] A correct ID **and** the matching WhatsApp number → accepted, and a row
-      appears in `Checkins`
-- [ ] The correct ID with a **different** number → refused, with the "راجع
-      الاتنين" message
-- [ ] An ID that does not exist → the same refusal
-- [ ] A malformed ID like `hello` → the "شكله مش مظبوط" message
-- [ ] The page never shows any stored data back, not even on success
-- [ ] Log three weeks, then open `Dashboard`, pick the ID in **B1**:
-  - [ ] name, status and objectives fill in
-  - [ ] start vs. latest weight and waist, and the change in each
-  - [ ] check-ins logged, sessions completed, sessions planned, adherence %
-  - [ ] the sparklines draw
-  - [ ] the weight/waist chart draws
+Do these on a phone, once in Arabic and once in English. Use the test
+participant (menu → **Create test participant**, username `+201099999999`) or
+a fresh intake with a number you own.
+
+- [ ] A new intake with `01001240186` creates username `+201001240186`; the
+      confirmation shows it and the first password `12345678`
+- [ ] The same number again → the "this number is already registered" message;
+      no second row in `Submissions` or `Users`
+- [ ] Login with `12345678` works and goes straight to "change your password";
+      opening `tracker.html` by hand also sends you back there
+- [ ] The number typed with Arabic digits (`٠١٠٠١٢٤٠١٨٦`) logs in too
+- [ ] After the change, `12345678` no longer works and the new password does
+- [ ] A new password with any Arabic letter is refused — the checklist shows it
+      while typing, and the server refuses it too
+- [ ] 5 wrong passwords → "locked"; a number with no account gives exactly the
+      same messages
+- [ ] (Optional) In `Users`, set `initial_expires_at` to yesterday for an
+      account still on `12345678` → login says the first password expired
+- [ ] Coach console → **Password reset link**: the link works once, the
+      address bar no longer shows `#t=…` after it opens, and a second use fails
+- [ ] Before a plan is published, the tracker shows "your coach is preparing
+      your program"
+- [ ] Coach console: **Copy brief for Claude** → paste the plan JSON → **Validate**
+      → the preview looks right → **Publish** → the tracker shows the sessions
+      in the right weeks and on the right dates
+- [ ] Ticking a session done / partly / skipped updates the numbers at once,
+      shows in the coach console, and adds a row to `SessionLogs`
+- [ ] Publishing a version 2 keeps the logs on sessions with the same `session_id`
+- [ ] A participant flagged for medical clearance: **Publish** stays disabled
+      until "clearance received" is ticked
+- [ ] The weekly check-in in the tracker adds a row to `Checkins` with the
+      right ID; the old `checkin.html` link goes to the login page
+- [ ] In the browser's developer tools (Network): no name, phone, password or
+      token appears in any URL; the console shows nothing about the participant
+- [ ] Trying another participant's data by editing the request (change
+      `participant_id` in the body of a `me` call) still returns only your own
+- [ ] The existing intake still works end to end, including the email
+- [ ] The tracker never shows BMI, waist-to-height or any body score
+- [ ] `coach.html` is not linked from any public page
 
 ---
 
 ## O. Before you announce it
 
-- [ ] Delete every test row from `Submissions` and `Checkins`
+- [ ] Menu → **Delete test participant**, and **Delete a participant…** for any
+      other test people (this clears every tab, not just `Submissions`)
 - [ ] Reset the counters if you want to start at 0001: in Apps Script,
       **Project Settings → Script Properties**, delete `seq_<year>`
 - [ ] Submit one last real-looking form and keep it, so the sheet is not empty

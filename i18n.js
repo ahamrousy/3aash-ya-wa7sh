@@ -337,7 +337,7 @@ window.I18N = {
 
     /* --- privacy page ----------------------------------------------------- */
     'pp.title'     : 'سياسة الخصوصية',
-    'pp.updated'   : 'آخر تحديث: سبتمبر 2026',
+    'pp.updated'   : 'آخر تحديث: أكتوبر 2026',
     'pp.back'      : 'رجوع للاستمارة',
     'pp.1.h'       : 'مين اللي بيجمع البيانات؟',
     'pp.1.b'       : 'د. أحمد عمروسي، مؤسس «عاش يا وحش»، هو المسؤول عن بياناتك. محدش بيوصل لها غيره وغير المدربين اللي بيشتغلوا على برنامجك إنت، وفي حدود اللي محتاجينه بس عشان يصمموه ويتابعوه.',
@@ -352,7 +352,7 @@ window.I18N = {
     'pp.6.h'       : 'حقوقك',
     'pp.6.b'       : 'حسب قانون حماية البيانات الشخصية المصري رقم 151 لسنة 2020، من حقك: تعرف البيانات المحفوظة عنك، تصحّح أي حاجة غلط، تسحب موافقتك في أي وقت، وتطلب مسح بياناتك بالكامل. سحب الموافقة أو مسح البيانات معناه إننا هنبطّل نتابع برنامجك، بس مش هيترتب عليه أي حاجة تانية.',
     'pp.7.h'       : 'إزاي تطلب تعديل أو مسح؟',
-    'pp.7.b'       : 'ابعت رسالة على الواتساب أو الإيميل اللي تحت، واكتب اسمك ورقمك في عاش يا وحش (AYW-...)، وهنتصرف في أقصى حد خلال 7 أيام.',
+    'pp.7.b'       : 'ابعت رسالة على الواتساب أو الإيميل اللي تحت، واكتب اسمك ورقمك في عاش يا وحش (AYW-...)، وهنتصرف في أقصى حد خلال 7 أيام. مسح بياناتك بيمسح كمان حسابك وبرنامجك وكل اللي سجّلته.',
     'pp.8.h'       : 'الأطفال',
     'pp.8.b'       : 'لو سنك أقل من 18 سنة، الاستمارة مش بتتقبل من غير اسم ولي الأمر ورقمه وموافقته الصريحة.',
     'pp.9.h'       : 'الصور والمحتوى',
@@ -623,7 +623,15 @@ window.I18N = {
     'api.no_account'              : 'المشارك ده لسه ملوش حساب.',
     'api.clearance_required'      : 'المشارك محتاج إذن طبي. علّم على "وصلنا الإذن الطبي" الأول.',
     'api.invalid_plan'            : 'البرنامج فيه أخطاء.',
-    'api.forbidden'               : 'مش مسموح.'
+    'api.forbidden'               : 'مش مسموح.',
+
+    /* --- privacy: accounts (Phase 3) --------------------------------------- */
+    'pp.10.h'   : 'حسابك',
+    'pp.10.b'   : 'بعد ما تبعت الاستمارة بيتعملّك حساب. اسم المستخدم هو رقم موبايلك، وإنت اللي بتختار كلمة السر. كلمة السر بتتخزّن متشفّرة (hashed) بس، يعني محدش يقدر يقراها — ولا حتى إحنا. لو نسيتها، المدرب بيبعتلك لينك تعمل بيه واحدة جديدة.',
+    'pp.11.h'   : 'برنامجك واللي بتسجّله',
+    'pp.11.b'   : 'بنحفظ برنامجك واللي بتسجّله عليه: الحصص اللي عملتها، المجهود، ملاحظاتك، والمتابعات الأسبوعية (الوزن ومحيط البطن والطاقة). فريق التدريب بس هو اللي بيشوفها، عشان يتابعك ويظبط برنامجك.',
+    'pp.12.h'   : 'تسجيل الدخول على جهازك',
+    'pp.12.b'   : 'المتصفح بيحتفظ بكود دخول عشان تفضل داخل لحد 30 يوم. لما تعمل "خروج" الكود بيتمسح وبيبطل يشتغل. مفيش أي cookies تانية ولا أي تتبّع.'
   },
 
   /* ===========================================================================
@@ -949,7 +957,7 @@ window.I18N = {
 
     /* --- privacy page ----------------------------------------------------- */
     'pp.title'     : 'Privacy policy',
-    'pp.updated'   : 'Last updated: September 2026',
+    'pp.updated'   : 'Last updated: October 2026',
     'pp.back'      : 'Back to the form',
     'pp.1.h'       : 'Who collects the data?',
     'pp.1.b'       : 'Dr. Ahmed Amrousy, founder of 3aash Ya Wa7sh, is responsible for your data. The only other people who can see it are the coaches working on your own program, and only as much as they need to design and follow it up.',
@@ -964,7 +972,7 @@ window.I18N = {
     'pp.6.h'       : 'Your rights',
     'pp.6.b'       : 'Under Egypt’s Personal Data Protection Law No. 151 of 2020 you have the right to: know what data is held about you, correct anything wrong, withdraw your consent at any time, and ask for your data to be deleted entirely. Withdrawing consent or deleting your data means we stop following up your program, but has no other consequence.',
     'pp.7.h'       : 'How to ask for correction or deletion',
-    'pp.7.b'       : 'Send a message to the WhatsApp number or email below with your name and your 3aash Ya Wa7sh ID (AYW-...). We will action it within 7 days at the latest.',
+    'pp.7.b'       : 'Send a message to the WhatsApp number or email below with your name and your 3aash Ya Wa7sh ID (AYW-...). We will action it within 7 days at the latest. Deleting your data also deletes your account, your program and everything you logged.',
     'pp.8.h'       : 'Children',
     'pp.8.b'       : 'If you are under 18, the form is not accepted without a guardian’s name, number and explicit consent.',
     'pp.9.h'       : 'Photos and content',
@@ -1235,6 +1243,14 @@ window.I18N = {
     'api.no_account'              : 'This participant has no account yet.',
     'api.clearance_required'      : 'This participant needs medical clearance. Tick "Medical clearance received" first.',
     'api.invalid_plan'            : 'The plan has errors.',
-    'api.forbidden'               : 'Not allowed.'
+    'api.forbidden'               : 'Not allowed.',
+
+    /* --- privacy: accounts (Phase 3) --------------------------------------- */
+    'pp.10.h'   : 'Your account',
+    'pp.10.b'   : 'After you send the form you get an account. Your username is your mobile number, and you choose your own password. We store the password only in scrambled (hashed) form, so nobody can read it — not even us. If you forget it, the coach sends you a link to set a new one.',
+    'pp.11.h'   : 'Your program and what you log',
+    'pp.11.b'   : 'We store your program and what you log against it: the sessions you did, your effort, your notes and your weekly check-ins (weight, waist and energy). Only the coaching team sees it, to follow you up and adjust your program.',
+    'pp.12.h'   : 'Staying logged in on your device',
+    'pp.12.b'   : 'Your browser keeps a login code so you stay signed in for up to 30 days. When you log out, the code is deleted and stops working. There are no other cookies and no tracking.'
   }
 };

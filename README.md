@@ -16,19 +16,19 @@ are designed and followed up by the team's professional coaches.
    Browser (GitHub Pages, static)            Google (private to the founder)
    ┌──────────────────────────────┐          ┌────────────────────────────┐
    │ index.html  · the 6 steps    │  POST    │ Apps Script Web App        │
-   │ checkin.html· weekly log     │ ───────► │  · validates everything    │
-   │ privacy.html                 │   JSON   │  · makes the AYW-… ID      │
-   │ app.js / checkin.js          │ ◄─────── │  · computes BMI + ratio    │
-   │ i18n.js  · all the words     │  {ok,id} │  · writes one sheet row    │
-   │ config.js· the endpoint URL  │          │  · emails the founder      │
+   │ login / change-password /    │ ───────► │  · validates everything    │
+   │   reset · participant login  │   JSON   │  · makes the AYW-… ID      │
+   │ tracker.html · own program   │ ◄─────── │  · accounts, sessions      │
+   │ coach.html   · coach console │  {ok,…}  │  · plans, logs, check-ins  │
+   │ i18n.js · config.js · …      │          │  · emails the founder      │
    └──────────────────────────────┘          └────────────────────────────┘
 ```
 
 * **No build step.** Plain HTML, CSS and JavaScript. What is in the repository is
   what runs.
 * **Nothing secret in this repository.** The only thing the browser knows is the
-  Apps Script URL in `config.js`. That URL accepts submissions; it never hands
-  data back out.
+  Apps Script URL in `config.js`. It hands data back only to a signed-in
+  participant (their own data) or to the signed-in coach.
 * **The browser is never trusted.** Every field is re-validated, re-typed and
   trimmed inside `Code.gs` before it is written.
 * **No analytics, no pixels, no third-party scripts** — the only external request
@@ -39,15 +39,20 @@ are designed and followed up by the team's professional coaches.
 | File | What it is |
 |---|---|
 | `index.html` | The welcome/privacy screen, the six-step form, the review and confirmation screens |
-| `checkin.html` | Phase 2 — the weekly progress check-in |
+| `login.html` · `change-password.html` · `reset.html` | Participant login, the forced first-login password change, and coach-made reset links |
+| `tracker.html` | The participant's own program, session log and weekly check-in |
+| `coach.html` | The coach console (not linked from any public page) |
+| `checkin.html` | Old check-in link — now just sends people to `login.html` |
 | `privacy.html` | The full privacy policy |
 | `styles.css` | All the styling. Light and dark, RTL and LTR, from one set of tokens |
 | `config.js` | **The file you edit to go live.** Endpoint URL, contact details, wording of the response time |
 | `i18n.js` | **Every word on the site**, Arabic and English side by side |
 | `common.js` | Shared plumbing: language switching, translation lookup, the one function that posts to Apps Script |
 | `app.js` | The intake form. The `SCHEMA` near the top defines every question |
-| `checkin.js` | The weekly check-in page |
+| `login.js` · `change-password.js` · `reset.js` · `tracker.js` · `coach.js` | One script per page above |
+| `plan-view.js` | Draws a program (used by the tracker and by the coach's preview) |
 | `apps-script/Code.gs` | The back end. Paste this into Apps Script |
+| `apps-script/tests/` | Offline tests and a local test server (developer tools, never deployed) |
 | `TEST-CHECKLIST.md` | What to walk through before telling people about the link |
 
 ---
@@ -152,13 +157,12 @@ number, a visitor can get your new page with the old stylesheet, which looks
 broken. So each HTML file loads its CSS and JS like this:
 
 ```html
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=4">
 ```
 
 Whenever you change `styles.css`, `config.js`, `i18n.js` or any other `.js`
-file, change that number to the next one (`?v=4`, …) in **all three** HTML
-files — `index.html`, `privacy.html`, `checkin.html`. Find-and-replace
-`?v=3` → `?v=4` does it in one go.
+file, change that number to the next one (`?v=5`, …) in **every** HTML
+file. Find-and-replace `?v=4` → `?v=5` across the folder does it in one go.
 
 ### The words
 
@@ -247,43 +251,103 @@ sent to the sheet automatically. Two things have to follow it:
 2. Fill in the form as yourself and submit.
 3. You should see a participant ID in the shape `AYW-2026-0001`.
 4. Within a minute: a new row in `Submissions`, and an email in your inbox.
-5. Open `checkin.html`, enter that ID plus the same WhatsApp number, and log a
-   week. A row appears in `Checkins`.
-6. On the `Dashboard` tab, pick your ID from the dropdown in **B1** and watch the
-   numbers and the chart fill in.
+5. The confirmation screen shows your username (your number) and the first
+   password. Log in, change the password, and you land on the tracker's
+   waiting screen. Log a weekly check-in there: a row appears in `Checkins`.
+6. Open `coach.html`, log in as the coach, open yourself, paste a plan and
+   publish it. Back on the tracker the program appears.
 
 `TEST-CHECKLIST.md` has the full list — adult, minor, PAR-Q "yes", each
 objective, both languages, on a phone, and with the network turned off.
 
 ### Running it on your own machine
 
-Any static file server will do. From the project folder:
+To try every page with the real `Code.gs` behind it, but nothing touching
+Google, run the local test server from the project folder (needs Node.js):
 
 ```bash
-python -m http.server 5178
+node apps-script/tests/dev-server.js
 ```
 
-Then open <http://127.0.0.1:5178/>. Opening `index.html` directly from the file
-system also works, but `localhost` is closer to the real thing.
+Then open <http://localhost:8787/>. It keeps everything in memory and starts
+with made-up test data: participant `+201099999999` / `Default#0000`, coach
+`coach@dev.local` / `Coach#Dev2026`. The offline tests run with:
+
+```bash
+node apps-script/tests/run-tests.js
+```
 
 ---
 
 ## Phase 2 — progress tracking
 
-Already built and shipped alongside Phase 1:
-
-* `checkin.html` asks for the participant ID **and** the WhatsApp number used at
-  sign-up. Both have to match the same row before anything is accepted.
-* The page **only sends**. It never asks the server for stored data and never
-  displays anything back, so it cannot be used to look anyone up.
-* Entries go to the `Checkins` tab: weight, waist, sessions completed, best
-  effort of the week, energy 1–5, notes.
+* Weekly check-ins go to the `Checkins` tab: weight, waist, sessions completed,
+  best effort of the week, energy 1–5, notes. Since Phase 3 they are sent from
+  inside the participant's tracker, so who sent them comes from the login.
 * The `Dashboard` tab is the team's view: pick a participant in **B1** and you
   get start vs. latest weight and waist, the change in each, check-ins logged,
   sessions completed against sessions planned, adherence %, average energy,
   sparklines for each trend, and a weight/waist line chart.
-* There is deliberately **no staff login page** on the public website. The
-  team's view is the sheet.
+
+---
+
+## Phase 3 — accounts, the program tracker and the coach console
+
+What it adds:
+
+* **Every participant gets an account.** Username = their WhatsApp number as
+  `+201001240186`; first password = the `DEFAULT_PASSWORD` Script Property
+  (`12345678`). That password only works until they change it — which they are
+  forced to do at first login — and for 14 days at most.
+* **The tracker** (`tracker.html`) shows "your coach is preparing your program"
+  until a plan is published, then the plan week by week. They tick each session
+  done / partly / skipped, with optional minutes, km, effort and a note, and do
+  the weekly check-in there.
+* **The coach console** (`coach.html`) — this replaces the old "no staff login"
+  rule. It is safe because: the coach account lives only in Script Properties
+  (hashed, never in the sheet or this repo); every coach action is checked on
+  the server, not in the browser; the page is not linked from anywhere public
+  and asks search engines not to index it; wrong passwords lock it; a coach
+  session lasts 12 hours.
+* **The system never writes a plan.** The coach copies a brief (the intake,
+  without name or contact details) into a Claude chat, pastes the JSON plan it
+  returns, checks the preview, and publishes. A participant who answered "yes"
+  to a health question cannot get a plan until "clearance received" is ticked.
+
+New tabs (made by `setup()`): `Users` (protected, password columns hidden),
+`Sessions`, `ResetTokens`, `Plans`, `PlanSessions`, `SessionLogs`, `AuthLog`,
+and `Progress` (one row per participant, refreshed whenever the console loads).
+Plans can also be typed into `Plans` + `PlanSessions` by hand: plain Arabic
+text works anywhere a title or detail goes.
+
+### Script Properties (Project Settings → Script properties)
+
+| Property | Set by | What it is |
+|---|---|---|
+| `DEFAULT_PASSWORD` | you | `12345678` — the first password every account gets |
+| `COACH_EMAIL` | you | where the "new submission" email goes |
+| `PEPPER` | `setup()` | a secret mixed into every password hash. **Never change or delete it** — every password would stop working |
+| `COACH_USERNAME`, `COACH_HASH` | the menu **Set coach password…** | the coach login |
+| `SITE_URL` | optional | only if the site moves from `https://ahamrousy.github.io/3aash-ya-wa7sh/` |
+
+None of these ever go in this repository.
+
+### Turning it on (once)
+
+1. Paste the new `Code.gs`, save, and set the Script Properties above.
+2. Run **setup** (or the menu **Set up / repair this sheet**). It builds the new
+   tabs and repairs any phone numbers that show `#ERROR!`.
+3. Menu → **Set coach password…**.
+4. Menu → **Create accounts for existing participants** (safe to run twice;
+   duplicate or broken numbers are listed under Executions).
+5. Redeploy: **Deploy → Manage deployments → ✏ edit → Version: New version →
+   Deploy**, so the URL stays the same.
+6. Push the website (all files) to GitHub.
+
+Other menu items: **Create / Delete test participant** (`AYW-9999-0001`,
+username `+201099999999`), **Delete a participant…** (for deletion requests:
+removes the person from every tab), **Unlock the coach login**, and **Time the
+password hashing**.
 
 ---
 
@@ -303,7 +367,11 @@ Already built and shipped alongside Phase 1:
 * BMI and waist-to-height are computed **server-side, for the coaching team only**. The
   participant is never shown a score or a label about their body.
 * Personal data never appears in a URL or a query string: everything travels in
-  the POST body.
+  the POST body. The login token is kept in the browser's local storage and sent
+  only in the POST body; a reset link carries its one-time code after `#`, which
+  browsers never send to a server, and the page wipes it from the address bar.
+* Passwords are stored only as salted, peppered, repeated SHA-256 hashes.
+  Session and reset codes are stored only as hashes too.
 * There are no analytics, no trackers and no advertising pixels on any page.
 
 ### Spam protection (no CAPTCHA)
@@ -327,6 +395,10 @@ Already built and shipped alongside Phase 1:
 | A new row has empty cells you expected to be filled | That field is not in `HEADERS`/`SPEC` in `Code.gs`, so the script dropped it. Add it and re-run `setup()` |
 | Two rows for one person | They submitted twice deliberately — a retry of the *same* submission is de-duplicated by its token |
 | The dashboard is empty | Nothing is picked in cell **B1**, or that participant has no check-ins yet |
+| Phone numbers show `#ERROR!` | Old rows saved before the fix. Run **Set up / repair this sheet** once |
+| "Locked" for a participant | Five wrong passwords: it unlocks itself after 15 minutes, or press **Unlock account** in the console |
+| The coach login says locked | Wait 15 minutes, or run **Unlock the coach login** from the sheet menu |
+| Someone forgot their password | Console → their page → **Password reset link** → Copy, and send it to them |
 | Arabic text shows in a fallback font | The Google Fonts `<link>` was removed or the device is offline; the site stays readable but loses the Naskh headings |
 
 ---
