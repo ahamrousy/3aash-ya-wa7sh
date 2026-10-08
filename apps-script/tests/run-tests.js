@@ -39,7 +39,7 @@ section('1. Router and Phase 1 regressions');
   check('broken JSON → bad_request',
     JSON.parse(S.doPost({ postData: { contents: '{not json' } }).getContent()).error === 'bad_request');
   check('missing type still means intake (old clients)',
-    post(S, Object.assign({}, ADULT, { type: undefined, submission_token: 'old' })).ok === true);
+    post(S, Object.assign({}, ADULT, { type: undefined, submission_token: 'old', whatsapp: '+20 1012345670' })).ok === true);
 
   const ck = { type: 'checkin', submission_token: 'ck', elapsed_ms: 60000, hp: '', participant_id: r.participant_id,
                whatsapp: '+20 1012345678', weight_kg: '91', sessions_done: '3', energy: '4' };
@@ -95,8 +95,8 @@ section('4. Password hashing');
   check('…and never replaces it', S.__state.props.PEPPER === pep);
 
   const rec = S.makePasswordRecord_('Wa7sh!2026');
-  check('record has algo, 5000 iterations, salt, hash',
-    rec.algo === 'sha256-iter-v1' && rec.iter === 5000 && Buffer.from(rec.salt, 'base64').length === 16 && rec.hash.length === 44, rec);
+  check('record has algo, 1000 iterations, salt, hash',
+    rec.algo === 'sha256-iter-v1' && rec.iter === 1000 && Buffer.from(rec.salt, 'base64').length === 16 && rec.hash.length === 44, rec);
   check('right password matches', S.checkPassword_('Wa7sh!2026', rec) === true);
   check('wrong password does not', S.checkPassword_('wa7sh!2026', rec) === false);
   const rec2 = S.makePasswordRecord_('Wa7sh!2026');
@@ -224,7 +224,7 @@ section('8. Accounts');
 /* --------------------------------------------------------------- migration */
 section('9. Migrating existing participants');
 {
-  const S = load({ props: PROPS });
+  const S = load();                     // rows saved before accounts existed: no DEFAULT_PASSWORD yet
   const ids = {};
   [['a', '+20 1011111111'], ['b', '+20 1022222222'], ['c', '+20 1022222222'], ['d', '+966 512345678']].forEach(([k, phone]) => {
     ids[k] = post(S, Object.assign({}, ADULT, { submission_token: 'm' + k, whatsapp: phone, name: 'P ' + k })).participant_id;
@@ -232,6 +232,7 @@ section('9. Migrating existing participants');
   /* a row with a phone the old rules never produced */
   const sub = S.__state.sheets.Submissions._state.rows;
   sub[sub.findIndex((r) => r[1] === ids.d)][3] = 'not a phone';
+  S.__state.props.DEFAULT_PASSWORD = PROPS.DEFAULT_PASSWORD;
 
   const rep = S.migrateExistingParticipants();
   const users = table(S, 'Users');
@@ -335,7 +336,8 @@ section('12. Phone numbers that Sheets turned into #ERROR!');
 
   rows[rows.length - 1][iPhone] = { f: '=+20 1033333333', v: '#ERROR!' };
   const rep = S.migrateExistingParticipants();
-  check('migration repairs #ERROR! phones itself and creates both accounts', /Accounts created: 2/.test(rep), rep);
+  check('migration repairs #ERROR! phones itself and gives the legacy row its account',
+    /Accounts created: 1\n  AYW-2026-0002 → \+201033333333/.test(rep) && table(S, 'Users').length === 2, rep);
   check('username saved as text, not as a number',
     table(S, 'Users').every((u) => typeof u.username === 'string' && u.username[0] === '+'), table(S, 'Users').map((u) => u.username));
 
@@ -346,6 +348,120 @@ section('12. Phone numbers that Sheets turned into #ERROR!');
   const u = S.findUser_('participant_id', id);
   S.updateRow_('Users', u._row, { status: 'active' });
   check('updating another column keeps the username as text', S.findUser_('participant_id', id).username === '+201012345678');
+}
+
+/* -------------------------------------------------------- step 2: auth flow */
+section('13. Intake creates the account');
+{
+  const S = load({ props: Object.assign({ COACH_EMAIL: 'coach@test.dev' }, PROPS) });
+  const r = post(S, ADULT);
+  check('intake returns the username and the default password',
+    r.ok && r.username === '+201012345678' && r.default_password === PROPS.DEFAULT_PASSWORD, r);
+  const u = S.findUser_('participant_id', r.participant_id);
+  check('Users row: awaiting_plan, must change password', u && u.status === 'awaiting_plan' && u.must_change_password === 'TRUE');
+  const again = post(S, Object.assign({}, ADULT, { submission_token: 'other', whatsapp: '+20 01012345678' }));
+  check('same number again → phone_exists', again.ok === false && again.error === 'phone_exists', again);
+  check('…and no second row anywhere', table(S, 'Submissions').length === 1 && table(S, 'Users').length === 1);
+  const retry = post(S, ADULT);
+  check('a retried submission returns the same username', retry.duplicate && retry.username === '+201012345678', retry);
+  const ar = post(S, Object.assign({}, ADULT, { submission_token: 'ar2', whatsapp: '+20 ١٠٠١٢٤٠١٨٦' }));
+  check('Arabic-Indic digits → username +201001240186', ar.username === '+201001240186', ar);
+  const mail = S.__state.mails[S.__state.mails.length - 1] || {};
+  check('coach email names the username', /Username {4}: \+201001240186/.test(mail.body || ''), mail.body);
+
+  const N = load();                                     // no DEFAULT_PASSWORD set
+  const n = post(N, ADULT);
+  check('without DEFAULT_PASSWORD the intake is still saved, without an account',
+    n.ok && !n.username && table(N, 'Submissions').length === 1 && table(N, 'Users').length === 0, n);
+}
+
+section('14. Login, first-login change, logout');
+{
+  const S = load({ props: PROPS });
+  post(S, ADULT);
+  const D = PROPS.DEFAULT_PASSWORD;
+
+  const first = post(S, { type: 'login', username: '01012345678', password: D });
+  check('default password logs in with a restricted session',
+    first.ok && first.scope === 'change_password_only' && first.must_change_password === true && first.name === 'أحمد', first);
+  check('Arabic-Indic digits work in the username field',
+    post(S, { type: 'login', username: '٠١٠١٢٣٤٥٦٧٨', password: D }).ok === true);
+  check('restricted session is refused by a full-session check',
+    S.auth_({ session: first.session }, 'participant', false).s === undefined);
+
+  const cp = (b) => post(S, Object.assign({ type: 'change_password', session: first.session, current_password: D }, b));
+  check('wrong current password → bad_current_password', cp({ current_password: 'nope1234', new_password: 'Wa7sh!2026' }).error === 'bad_current_password');
+  check('Arabic in the new password → pw_ascii_only', cp({ new_password: 'كلمةسر2026' }).error === 'pw_ascii_only');
+  check('the default as the new password → pw_is_default', cp({ new_password: D }).error === 'pw_is_default');
+  check('the phone digits in it → pw_has_phone', cp({ new_password: 'x1012345678' }).error === 'pw_has_phone');
+  const ok = cp({ new_password: 'Wa7sh!2026' });
+  check('good new password → full session', ok.ok && ok.scope === 'full' && /^[0-9a-f]{64}$/.test(ok.session), ok);
+  check('the restricted session is revoked', S.resolveSession_(first.session) === null);
+  const u = S.findUser_('username', '+201012345678');
+  check('must_change_password cleared, password_changed_at set', u.must_change_password === 'FALSE' && !!u.password_changed_at);
+
+  check('the default password no longer works', post(S, { type: 'login', username: '+201012345678', password: D }).error === 'bad_credentials');
+  const full = post(S, { type: 'login', username: '+20 1012345678', password: 'Wa7sh!2026' });
+  check('the new password does, with a full session', full.ok && full.scope === 'full' && full.must_change_password === false, full);
+
+  check('logout answers ok', post(S, { type: 'logout', session: full.session }).ok === true);
+  check('…and the session is dead', S.resolveSession_(full.session) === null);
+  check('AuthLog never holds a password',
+    !JSON.stringify(table(S, 'AuthLog')).includes('Wa7sh!2026') && !JSON.stringify(table(S, 'AuthLog')).includes(D));
+}
+
+section('15. Lockout, expiry and hash upgrade');
+{
+  const S = load({ props: PROPS });
+  post(S, ADULT);
+  const bad = () => post(S, { type: 'login', username: '+201012345678', password: 'wrong-pass' });
+  const errs = [1, 2, 3, 4, 5].map(() => bad().error);
+  check('five wrong passwords → bad_credentials each time', errs.every((e) => e === 'bad_credentials'), errs);
+  check('then locked, even with the right password',
+    post(S, { type: 'login', username: '+201012345678', password: PROPS.DEFAULT_PASSWORD }).error === 'locked');
+  const ghost = () => post(S, { type: 'login', username: '+201055555555', password: 'wrong-pass' });
+  const gErrs = [1, 2, 3, 4, 5].map(() => ghost().error);
+  check('a number with no account answers the same way…', gErrs.every((e) => e === 'bad_credentials'), gErrs);
+  check('…and is "locked" too, so nothing reveals whether it exists', ghost().error === 'locked');
+
+  const T = load({ props: PROPS });
+  const r = post(T, ADULT);
+  const u = T.findUser_('participant_id', r.participant_id);
+  T.updateRow_('Users', u._row, { initial_expires_at: new Date(Date.now() - 1000).toISOString() });
+  check('default password older than 14 days → initial_expired',
+    post(T, { type: 'login', username: '+201012345678', password: PROPS.DEFAULT_PASSWORD }).error === 'initial_expired');
+
+  const H = load({ props: PROPS });
+  post(H, ADULT);
+  const hu = H.findUser_('username', '+201012345678');
+  const salt = H.Utilities.base64Encode(H.randomBytes_(16));
+  H.updateRow_('Users', hu._row, { pw_iter: 5000, pw_salt: salt, pw_hash: H.hashPassword_(PROPS.DEFAULT_PASSWORD, salt, 5000) });
+  check('an account hashed at 5000 iterations still logs in',
+    post(H, { type: 'login', username: '+201012345678', password: PROPS.DEFAULT_PASSWORD }).ok === true);
+  check('…and is re-hashed at the current 1000', Number(H.findUser_('username', '+201012345678').pw_iter) === 1000);
+}
+
+section('16. Reset links');
+{
+  const S = load({ props: PROPS });
+  const r = post(S, ADULT);
+  const token = S.randomToken_();
+  S.writeRow_('ResetTokens', { token_hash: S.sha256Hex_(token), participant_id: r.participant_id, created_by: 'coach',
+                               created_at: new Date().toISOString(), expires_at: new Date(Date.now() + 864e5).toISOString(), used_at: '' });
+  const v = post(S, { type: 'reset_verify', token });
+  check('reset_verify greets by first name only', v.ok && v.name === 'أحمد' && Object.keys(v).length === 2, v);
+  check('a weak password is refused on reset', post(S, { type: 'reset_complete', token, new_password: 'short' }).error === 'pw_too_short');
+  const done = post(S, { type: 'reset_complete', token, new_password: 'Reset#2026x' });
+  check('reset_complete logs in with a full session', done.ok && done.scope === 'full', done);
+  check('the link works only once', post(S, { type: 'reset_verify', token }).error === 'reset_invalid');
+  check('the new password works', post(S, { type: 'login', username: '+201012345678', password: 'Reset#2026x' }).ok === true);
+  check('AuthLog has reset_used', table(S, 'AuthLog').some((x) => x.event === 'reset_used'));
+
+  const old = S.randomToken_();
+  S.writeRow_('ResetTokens', { token_hash: S.sha256Hex_(old), participant_id: r.participant_id, created_by: 'coach',
+                               created_at: '', expires_at: new Date(Date.now() - 1000).toISOString(), used_at: '' });
+  check('an expired link is refused', post(S, { type: 'reset_verify', token: old }).error === 'reset_invalid');
+  check('a malformed token is refused', post(S, { type: 'reset_verify', token: '../etc' }).error === 'reset_invalid');
 }
 
 console.log('\n================  ' + pass + ' passed, ' + fail + ' failed  ================\n');

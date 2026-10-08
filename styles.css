@@ -680,6 +680,60 @@ html.motion .reveal {
   @keyframes card-in { from { opacity: 0; transform: translateY(16px) scale(.94); } to { opacity: 1; transform: none; } }
 }
 
+/* ===========================================================================
+   15. ACCOUNTS — header link, login, password pages
+   ======================================================================== */
+.hdr-link {
+  margin-inline-start: auto;
+  display: inline-flex; align-items: center; min-height: var(--tap); padding-inline: var(--s3);
+  color: var(--accent-dark); font-weight: 700; font-size: .95rem; text-decoration: none; border-radius: 999px;
+}
+.hdr-link:hover { background: var(--accent-soft); color: var(--accent-dark); }
+.hdr-link + .lang { margin-inline-start: 0; }
+
+.auth { max-width: 32rem; }
+.auth__lead { color: var(--ink-soft); margin-block-end: var(--s5); }
+.auth__links { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s3); margin: 0; font-size: .95rem; }
+.auth .btn--lg { width: 100%; }
+
+/* Password box with a Show / Hide button inside it, at the end of the line. */
+.pw { position: relative; }
+.pw .input { padding-inline-end: 5.5rem; direction: ltr; text-align: start; }
+html[dir="rtl"] .pw .input { text-align: right; }
+.pw__toggle {
+  position: absolute; inset-block: 4px; inset-inline-end: 4px;
+  min-width: 4.5rem; padding-inline: var(--s3);
+  background: var(--surface-2); color: var(--ink); border: 0; border-radius: 8px;
+  font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer;
+}
+.pw__toggle:hover { background: var(--accent-soft); }
+
+/* The live rule checklist under a new password. */
+.rules-box { background: var(--surface-2); border-radius: var(--radius-sm); padding: var(--s3) var(--s4); }
+.rules__title { margin: 0 0 var(--s1); font-weight: 700; font-size: .9rem; }
+.rules { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s1); font-size: .9rem; color: var(--muted); }
+.rules li { position: relative; padding-inline-start: 1.6rem; }
+.rules li::before {
+  content: ""; position: absolute; inset-inline-start: 0; top: .45em;
+  width: .95rem; height: .95rem; border: 2px solid var(--line-2); border-radius: 50%;
+}
+.rules li.is-ok { color: var(--ok); font-weight: 600; }
+.rules li.is-ok::before { border-color: var(--ok); background: var(--ok); box-shadow: inset 0 0 0 2px var(--surface-2); }
+
+.rs__hello { font-weight: 700; margin: 0; }
+
+/* Login details on the confirmation screen. */
+.idcard--login { border-style: solid; }
+.cred { margin: 0 0 var(--s3); display: grid; gap: var(--s3); }
+.cred__row { display: grid; gap: 2px; }
+.cred dt { color: var(--muted); font-size: .85rem; }
+.cred dd {
+  margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.25rem; font-weight: 700; letter-spacing: .04em; overflow-wrap: anywhere;
+}
+.cred dd output { direction: ltr; unicode-bidi: isolate; }
+.idcard--login .btn { margin-block-start: var(--s4); }
+
 /* The celebration burst — pieces are added by app.js only when motion is allowed. */
 .burst { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
 .burst__bit {

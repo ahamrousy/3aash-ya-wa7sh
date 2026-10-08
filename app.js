@@ -536,12 +536,14 @@
       num.setAttribute('aria-describedby', out.describedBy);
       sel.setAttribute('aria-describedby', out.describedBy);
 
+      /* Digits typed on an Arabic keyboard (٠–٩) count as 0–9, not as nothing. */
+      var digitsOf = function () { return A.toAsciiDigits(num.value).replace(/[^\d]/g, '').replace(/^0+/, ''); };
       bind(f, [sel, num], function () {
-        var digits = num.value.replace(/[^\d]/g, '').replace(/^0+/, '');
+        var digits = digitsOf();
         return digits ? sel.value + ' ' + digits : '';
       });
       nodes[f.name].code = function () { return sel.value; };
-      nodes[f.name].raw  = function () { return num.value.replace(/[^\d]/g, '').replace(/^0+/, ''); };
+      nodes[f.name].raw  = digitsOf;
       nodes[f.name].set  = function (v) {
         if (!v) { sel.value = '+20'; num.value = ''; return; }
         var parts = String(v).split(' ');
@@ -1210,11 +1212,15 @@
 
   function showFailure(code) {
     var box = $('#submit-error');
-    var msg = code === 'no_endpoint' ? t('fail.noEndpoint')
-            : code === 'timeout'     ? t('fail.timeout')
-            : code === 'too_fast'    ? t('fail.spam')
+    var msg = code === 'no_endpoint'  ? t('fail.noEndpoint')
+            : code === 'timeout'      ? t('fail.timeout')
+            : code === 'too_fast'     ? t('fail.spam')
+            : code === 'phone_exists' ? t('fail.phone_exists')
             : t('fail.body');
     $('#submit-error-body').textContent = msg;
+    /* A number that already has an account: log in instead of sending again. */
+    $('#btn-retry').hidden = code === 'phone_exists';
+    $('#submit-error-exists').hidden = code !== 'phone_exists';
     box.hidden = false;
     box.setAttribute('tabindex', '-1');
     box.focus();
@@ -1254,7 +1260,7 @@
     A.post(buildPayload())
       .then(function (res) {
         clearDraft();
-        showDone(res.participant_id);
+        showDone(res);
       })
       .catch(function (err) {
         setSubmitting(false);
@@ -1262,9 +1268,15 @@
       });
   }
 
-  function showDone(id) {
+  function showDone(res) {
     setSubmitting(false);
-    $('#done-id').textContent = id || '—';
+    $('#done-id').textContent = res.participant_id || '—';
+    /* Login details come from the server (the default password is a Script
+       Property there, never written into this site). */
+    $('#done-account').hidden = !res.username;
+    $('#done-user').textContent = res.username || '';
+    $('#done-pw').textContent = res.default_password || '';
+    $('#done-pw-row').hidden = !res.default_password;
     showScreen('screen-done');
     celebrate();
     var h = $('#done-h');
@@ -1330,23 +1342,14 @@
     $('#btn-review-back').addEventListener('click', function () { goToStep(TOTAL_STEPS); });
 
     $('#btn-copy-id').addEventListener('click', function () {
-      var id = $('#done-id').textContent;
       var btn = this;
-      var done = function () {
+      A.copyText($('#done-id').textContent).then(function (ok) {
+        if (!ok) return;
         btn.textContent = t('done.copied');
         setTimeout(function () { btn.textContent = t('done.copy'); }, 2000);
-      };
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(id).then(done, fallback);
-      } else { fallback(); }
-      function fallback() {
-        var ta = document.createElement('textarea');
-        ta.value = id; ta.setAttribute('readonly', ''); ta.style.position = 'absolute'; ta.style.left = '-9999px';
-        document.body.appendChild(ta); ta.select();
-        try { document.execCommand('copy'); done(); } catch (e) { /* nothing else to try */ }
-        document.body.removeChild(ta);
-      }
+      });
     });
+    A.initCoachLinks();
 
     $('#btn-again').addEventListener('click', function () {
       state.data = {}; state.step = 1; state.token = A.uuid(); state.startedAt = Date.now();

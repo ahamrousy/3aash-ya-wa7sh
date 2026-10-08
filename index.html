@@ -17,7 +17,7 @@
 <link rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap">
 <link rel="preload" as="image" href="assets/logo.png">
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=4">
 <script>try{if(matchMedia('(prefers-reduced-motion: no-preference)').matches)document.documentElement.classList.add('motion')}catch(e){}</script>
 <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -37,6 +37,7 @@
       <small class="brand__tag" data-i18n="brand.tagline">ناس مننا مكملة في التغيير للأحسن</small>
     </a>
 
+    <a class="hdr-link" href="login.html" data-i18n="nav.login">دخول</a>
     <button type="button" class="lang" data-lang-toggle data-i18n-aria="lang.switch.aria">
       <svg class="lang__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>
@@ -172,6 +173,10 @@
           <h3 data-i18n="fail.title">الاستمارة مبعتتش</h3>
           <p id="submit-error-body"></p>
           <button type="button" id="btn-retry" class="btn btn--primary" data-i18n="fail.retry">حاول تاني</button>
+          <p id="submit-error-exists" class="done__links" hidden>
+            <a class="btn btn--primary" href="login.html" data-i18n="nav.login"></a>
+            <a class="btn btn--ghost" data-wa-coach target="_blank" rel="noopener" data-i18n="api.contact"></a>
+          </p>
         </div>
 
         <p class="rev__backline">
@@ -207,6 +212,23 @@
         <p class="idcard__hint" data-i18n="done.id.hint"></p>
       </div>
 
+      <!-- Login details: only shown when the server created the account -->
+      <div id="done-account" class="idcard idcard--login" hidden>
+        <p class="idcard__label" data-i18n="done.acc.title"></p>
+        <dl class="cred">
+          <div class="cred__row">
+            <dt data-i18n="done.acc.user"></dt>
+            <dd><output id="done-user" dir="ltr"></output></dd>
+          </div>
+          <div class="cred__row" id="done-pw-row">
+            <dt data-i18n="done.acc.pw"></dt>
+            <dd><output id="done-pw" dir="ltr"></output></dd>
+          </div>
+        </dl>
+        <p class="idcard__hint" data-i18n="done.acc.hint"></p>
+        <a class="btn btn--primary" href="login.html" data-i18n="done.acc.go"></a>
+      </div>
+
       <h3 data-i18n="done.next.title"></h3>
       <p data-cfg="responseTime"></p>
 
@@ -214,7 +236,6 @@
         <a class="btn btn--ghost" href="https://instagram.com/3aashyawa7sh" data-cfg-href="instagramUrl" rel="noopener">
           <span data-i18n="done.ig"></span>
         </a>
-        <a class="btn btn--ghost" href="checkin.html" data-i18n="done.checkin"></a>
       </p>
 
       <p><button type="button" id="btn-again" class="btn btn--link" data-i18n="done.again"></button></p>
@@ -227,7 +248,7 @@
   <div class="wrap">
     <nav class="site-footer__nav" aria-label="footer">
       <a href="privacy.html" data-i18n="footer.privacy">سياسة الخصوصية</a>
-      <a href="checkin.html" data-i18n="footer.checkin">متابعة التقدم</a>
+      <a href="login.html" data-i18n="footer.login">دخول المشتركين</a>
       <a href="https://instagram.com/3aashyawa7sh" data-cfg-href="instagramUrl" rel="noopener" data-i18n="footer.ig">إنستجرام</a>
     </nav>
     <p class="site-footer__note" data-i18n="footer.made"></p>
@@ -236,9 +257,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="config.js?v=3"></script>
-<script src="i18n.js?v=3"></script>
-<script src="common.js?v=3"></script>
-<script src="app.js?v=3"></script>
+<script src="config.js?v=4"></script>
+<script src="i18n.js?v=4"></script>
+<script src="common.js?v=4"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

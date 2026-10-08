@@ -178,8 +178,13 @@ function doGet() {
 /* Every request is a POST with a JSON body; body.type picks the handler.
    Later build steps add the account, tracker and coach routes here. */
 var ROUTES = {
-  intake:  handleIntake,
-  checkin: handleCheckin
+  intake:          handleIntake,
+  checkin:         handleCheckin,
+  login:           handleLogin,
+  change_password: handleChangePassword,
+  logout:          handleLogout,
+  reset_verify:    handleResetVerify,
+  reset_complete:  handleResetComplete
 };
 
 function doPost(e) {
@@ -235,7 +240,12 @@ function handleIntake(body) {
     /* A retry after a dropped connection must not create a second row. */
     var token = clean_(body.submission_token, 60);
     var already = tokenSeen_(token, SHEET_MAIN);
-    if (already) return json({ ok: true, participant_id: already, duplicate: true });
+    if (already) {
+      var had = findUser_('participant_id', already);
+      return json({ ok: true, participant_id: already, duplicate: true,
+                    username: had ? String(had.username) : undefined,
+                    default_password: had && defaultPasswordActive_(had) ? prop_('DEFAULT_PASSWORD') : undefined });
+    }
 
     var clean = {};
     var missing = [];
@@ -270,6 +280,12 @@ function handleIntake(body) {
 
     if (missing.length) {
       return json({ ok: false, error: 'invalid', fields: missing });
+    }
+
+    /* One account per number: the username is the WhatsApp number. */
+    var username = normalisePhone_(clean.whatsapp);
+    if (username && findUser_('username', username)) {
+      return json({ ok: false, error: 'phone_exists' });
     }
 
     /* --- derived numbers: for the coach only, never shown to the person --- */
@@ -317,9 +333,20 @@ function handleIntake(body) {
     appendRow_(sheet, HEADERS, row, NUMERIC_COLUMNS);
     rememberToken_(token, id);
 
-    notifyCoach_(row, clearance, isMinor);
+    /* The account is created in the same lock as the row. If the default
+       password is not set yet the submission is still kept, just without an
+       account; "Create accounts for existing participants" adds it later. */
+    var account = false;
+    if (username && prop_('DEFAULT_PASSWORD')) {
+      try { initSecrets_(); createAccount_(id, username, clean.name); account = true; }
+      catch (accErr) { log_('No account for ' + id + ': ' + accErr); }
+    }
 
-    return json({ ok: true, participant_id: id });
+    notifyCoach_(row, clearance, isMinor, account ? username : '');
+
+    return json({ ok: true, participant_id: id,
+                  username: account ? username : undefined,
+                  default_password: account ? prop_('DEFAULT_PASSWORD') : undefined });
 
   } finally {
     lock.releaseLock();
@@ -447,7 +474,7 @@ function coachEmail_() {
   return String(fromProps || COACH_EMAIL || '').trim();
 }
 
-function notifyCoach_(row, clearance, isMinor) {
+function notifyCoach_(row, clearance, isMinor, username) {
   var to = coachEmail_();
   if (!SEND_EMAIL || !to || to === 'coach@example.com') return;
   try {
@@ -461,6 +488,7 @@ function notifyCoach_(row, clearance, isMinor) {
       'ID          : ' + row.participant_id,
       'Name        : ' + row.name,
       'WhatsApp    : ' + row.whatsapp,
+      'Username    : ' + (username || '— (no account yet)'),
       'Email       : ' + (row.email || '—'),
       'City        : ' + (row.city || '—'),
       'Contact via : ' + (row.contact_pref || '—'),
@@ -530,6 +558,7 @@ function coerce_(raw, spec) {
          Digits typed on an Arabic keyboard (٠–٩) are turned into 0–9 first. */
       var m = /^(\+\d{1,4})\s*(\d{6,14})$/.exec(clean_(toAsciiDigits_(s), 24));
       if (!m) return '';
+      if (m[1] === '+20') m[2] = m[2].replace(/^0/, '');     // "+20 0100…" is the same number
       if (m[1] === '+20' && !/^1[0125]\d{8}$/.test(m[2])) return '';
       return m[1] + ' ' + m[2];
     }
@@ -968,11 +997,15 @@ var TABS = {
   }
 };
 
-/* Security settings. Raising PW_ITERATIONS later is safe: each user row keeps
-   the count it was hashed with, and the new count applies to new passwords. */
+/* Security settings. Changing PW_ITERATIONS later is safe: each user row keeps
+   the count it was hashed with, and a successful login re-hashes it with the
+   current count. 1,000 rather than the spec's 5,000: on the live sheet one
+   hash check took 4 s at 5,000 (benchmarkHashing, Oct 2026), which breaks the
+   3-second target for a login. The pepper, which never leaves Script
+   Properties, is what protects the hashes if the sheet ever leaks. */
 var AUTH = {
   PW_ALGO:                 'sha256-iter-v1',
-  PW_ITERATIONS:           5000,
+  PW_ITERATIONS:           1000,
   PARTICIPANT_SESSION_DAYS: 30,
   COACH_SESSION_HOURS:     12,
   INITIAL_PASSWORD_DAYS:   14,
@@ -1357,16 +1390,35 @@ function isLocked_(user) {
   return !!user && timeOf_(user.locked_until) > Date.now();
 }
 
-/** Count a failed login. Caller holds the lock. */
-function registerFailure_(user, username) {
+/** The cache-side lock on a number that has no account. */
+function isNameLocked_(username) {
+  try { return !!CacheService.getScriptCache().get('ulock_' + sha256Hex_(String(username)).slice(0, 20)); }
+  catch (e) { return false; }
+}
+
+/**
+ * Count a failed login. Caller holds the lock. Numbers without an account are
+ * locked the same way (in the cache), so "locked" never reveals whether a
+ * number is registered.
+ */
+function registerFailure_(user, username, event) {
+  var idk = sha256Hex_(String(username)).slice(0, 20);
   var day = Utilities.formatDate(new Date(), 'Africa/Cairo', 'yyyyMMdd');
-  var key = 'faild_' + sha256Hex_(username).slice(0, 20) + '_' + day;
+  var key = 'faild_' + idk + '_' + day;
   var cache = CacheService.getScriptCache();
   var today = Number(cache.get(key) || 0) + 1;
-  try { cache.put(key, String(today), 90000); } catch (e) { /* best effort */ }
+  try { cache.put(key, String(today), 21600); } catch (e) { /* best effort */ }
 
-  logAuth_(username, 'login', 'fail', user ? 'bad password' : 'unknown username');
-  if (!user) return;
+  logAuth_(username, event || 'login', 'fail', user ? 'bad password' : 'unknown username');
+  if (!user) {
+    var run = Number(cache.get('ufail_' + idk) || 0) + 1;
+    try {
+      cache.put('ufail_' + idk, String(run), 3600);
+      if (today >= AUTH.HARD_LOCK_PER_DAY) cache.put('ulock_' + idk, '1', 21600);
+      else if (run % AUTH.LOCK_AFTER === 0) cache.put('ulock_' + idk, '1', AUTH.LOCK_MINUTES * 60);
+    } catch (e) { /* best effort */ }
+    return;
+  }
 
   var count = Number(user.failed_count || 0) + 1;
   var patch = { failed_count: count };
@@ -1413,6 +1465,180 @@ function setCoachPasswordFromMenu() {
   if (p.getSelectedButton() !== ui.Button.OK) return;
   try { ui.alert(setCoachPassword(p.getResponseText(), u.getResponseText())); }
   catch (e) { ui.alert(String(e.message || e)); }
+}
+
+
+/* ===========================================================================
+   API HELPERS — replies, sessions and roles for the account routes
+   ======================================================================== */
+function fail_(code, extra) {
+  var o = { ok: false, error: code };
+  if (extra) Object.keys(extra).forEach(function (k) { o[k] = extra[k]; });
+  return json(o);
+}
+
+/**
+ * The session behind a request, checked for role and scope. Returns {s} or
+ * {reply}. A participant ID always comes from the session, never the body.
+ */
+function auth_(body, role, allowRestricted) {
+  var s = resolveSession_(body && body.session);
+  if (!s) return { reply: fail_('session_expired') };
+  if (s.role !== role) return { reply: fail_('forbidden') };
+  if (s.scope !== 'full' && !allowRestricted) return { reply: fail_('password_change_required') };
+  return { s: s };
+}
+
+function withLock_(fn) {
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(20000); } catch (e) { return fail_('busy'); }
+  try { return fn(); } finally { lock.releaseLock(); }
+}
+
+function firstName_(name) { return String(name || '').trim().split(/\s+/)[0] || ''; }
+function str_(v, max) { return String(v == null ? '' : v).slice(0, max || 200); }
+
+/** A participant's intake row as an object, or null. */
+function submissionOf_(pid) {
+  var sheet = getSheet_(SHEET_MAIN, HEADERS);
+  var last = sheet.getLastRow();
+  if (last < 2) return null;
+  var iPid = HEADERS.indexOf('participant_id');
+  var rows = sheet.getRange(2, 1, last - 1, HEADERS.length).getValues();
+  for (var i = rows.length - 1; i >= 0; i--) {
+    if (String(rows[i][iPid]).trim().toUpperCase() !== pid) continue;
+    var o = { _row: i + 2 };
+    HEADERS.forEach(function (h, j) { o[h] = fromCell_(rows[i][j]); });
+    return o;
+  }
+  return null;
+}
+
+/** New password for a user: hashed, first-login flag cleared, lock lifted. */
+function setPassword_(user, password) {
+  var rec = makePasswordRecord_(password);
+  updateRow_(SHEET_USERS, user._row, {
+    pw_algo: rec.algo, pw_iter: rec.iter, pw_salt: rec.salt, pw_hash: rec.hash,
+    must_change_password: 'FALSE', password_changed_at: nowIso_(), failed_count: 0, locked_until: ''
+  });
+}
+
+/** Re-hash after a good login when the stored cost is not the current one. */
+function upgradeHashIfNeeded_(user, password) {
+  if (String(user.pw_algo) === AUTH.PW_ALGO && Number(user.pw_iter) === AUTH.PW_ITERATIONS) return;
+  var rec = makePasswordRecord_(password);
+  updateRow_(SHEET_USERS, user._row, { pw_algo: rec.algo, pw_iter: rec.iter, pw_salt: rec.salt, pw_hash: rec.hash });
+}
+
+function sessionReply_(sess, scope, user, extra) {
+  var o = { ok: true, session: sess.token, expires_at: sess.expires_at, scope: scope,
+            name: firstName_(user.name), username: String(user.username) };
+  if (extra) Object.keys(extra).forEach(function (k) { o[k] = extra[k]; });
+  return json(o);
+}
+
+
+/* ===========================================================================
+   AUTH ROUTES — login, change_password, logout, reset_verify, reset_complete
+   ======================================================================== */
+function handleLogin(body) {
+  var typed = clean_(body.username, 30);
+  var username = normalisePhone_(typed);
+  var password = str_(body.password, 200);
+  return withLock_(function () {
+    var user = username ? findUser_('username', username) : null;
+    if (user && String(user.role) !== 'participant') user = null;
+    if (user ? isLocked_(user) : isNameLocked_(username || typed)) {
+      logAuth_(username || typed, 'login', 'locked', '');
+      return fail_('locked');
+    }
+    if (!user || !password || !checkPassword_(password, passwordRecordOf_(user))) {
+      registerFailure_(user, username || typed);
+      return fail_('bad_credentials');
+    }
+    var mustChange = isTrue_(user.must_change_password);
+    if (mustChange && timeOf_(user.initial_expires_at) <= Date.now()) {
+      logAuth_(username, 'login', 'initial_expired', '');
+      return fail_('initial_expired');
+    }
+    registerSuccess_(user);
+    upgradeHashIfNeeded_(user, password);
+    var scope = mustChange ? 'change_password_only' : 'full';
+    var sess = createSession_(String(user.participant_id), 'participant', scope);
+    logAuth_(username, 'login', 'ok', mustChange ? 'must change password' : '');
+    var sub = submissionOf_(String(user.participant_id));
+    return sessionReply_(sess, scope, user, {
+      must_change_password: mustChange, lang: sub ? String(sub.language_used || '') : ''
+    });
+  });
+}
+
+function handleChangePassword(body) {
+  var a = auth_(body, 'participant', true);
+  if (a.reply) return a.reply;
+  return withLock_(function () {
+    var user = findUser_('participant_id', a.s.pid);
+    if (!user) return fail_('session_expired');
+    if (isLocked_(user)) return fail_('locked');
+    var current = str_(body.current_password, 200);
+    var next = String(body.new_password == null ? '' : body.new_password);
+    if (!checkPassword_(current, passwordRecordOf_(user))) {
+      registerFailure_(user, String(user.username), 'change_password');
+      return fail_('bad_current_password');
+    }
+    var problem = passwordProblem_(next, user.username) || (next === current ? 'pw_same' : '');
+    if (problem) return fail_(problem);
+    setPassword_(user, next);
+    revokeAllSessions_(a.s.pid, '');
+    var sess = createSession_(a.s.pid, 'participant', 'full');
+    logAuth_(user.username, 'change_password', 'ok', '');
+    return sessionReply_(sess, 'full', user);
+  });
+}
+
+function handleLogout(body) {
+  var s = resolveSession_(body && body.session);
+  if (!s) return json({ ok: true });
+  return withLock_(function () { revokeSession_(s.hash); return json({ ok: true }); });
+}
+
+/** An unused, unexpired reset-token row, or null. */
+function findResetToken_(token) {
+  token = String(token || '');
+  if (!/^[0-9a-f]{64}$/.test(token)) return null;
+  var hash = sha256Hex_(token);
+  var rows = readRows_(SHEET_RESETS);
+  for (var i = 0; i < rows.length; i++) {
+    if (String(rows[i].token_hash) !== hash) continue;
+    if (rows[i].used_at || timeOf_(rows[i].expires_at) <= Date.now()) return null;
+    return rows[i];
+  }
+  return null;
+}
+
+function handleResetVerify(body) {
+  var r = findResetToken_(body.token);
+  var user = r && findUser_('participant_id', String(r.participant_id));
+  if (!user) return fail_('reset_invalid');
+  return json({ ok: true, name: firstName_(user.name) });
+}
+
+function handleResetComplete(body) {
+  return withLock_(function () {
+    var r = findResetToken_(body.token);
+    var user = r && findUser_('participant_id', String(r.participant_id));
+    if (!user) return fail_('reset_invalid');
+    var next = String(body.new_password == null ? '' : body.new_password);
+    var problem = passwordProblem_(next, user.username);
+    if (problem) return fail_(problem);
+    updateRow_(SHEET_RESETS, r._row, { used_at: nowIso_() });
+    setPassword_(user, next);
+    var pid = String(user.participant_id);
+    revokeAllSessions_(pid, '');
+    var sess = createSession_(pid, 'participant', 'full');
+    logAuth_(user.username, 'reset_used', 'ok', '');
+    return sessionReply_(sess, 'full', user);
+  });
 }
 
 
