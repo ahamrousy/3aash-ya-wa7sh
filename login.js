@@ -30,10 +30,17 @@
     return A.normalisePhone($('#lg-code').value + raw.replace(/^0+/, ''));
   }
 
+  /* The message must be seen: on a phone the keyboard can hide the box, which
+     looks as if the page simply "went back to login". Scroll to it and focus it. */
   function showError(code) {
     $('#lg-error-body').textContent = A.apiMessage(code);
-    $('#lg-error-wa').hidden = !(code === 'locked' || code === 'initial_expired');
-    $('#lg-error').hidden = false;
+    $('#lg-error-wa').hidden = !(code === 'locked' || code === 'initial_expired' || code === 'storage_blocked');
+    var box = $('#lg-error');
+    box.hidden = false;
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    box.setAttribute('tabindex', '-1');
+    box.focus();
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   function setSending(on) {
@@ -62,7 +69,13 @@
     setSending(true);
     A.post({ type: 'login', username: user, password: pw })
       .then(function (res) {
-        A.saveSession(res);
+        /* If the browser will not keep the login, the next page would find
+           none and send the person straight back here. Say so instead. */
+        if (!A.saveSession(res)) {
+          setSending(false);
+          showError('storage_blocked');
+          return;
+        }
         window.location.replace(res.scope === 'full' ? 'tracker.html' : 'change-password.html');
       })
       .catch(function (err) {
@@ -73,7 +86,10 @@
   }
 
   function init() {
-    if (routeExisting()) return;
+    var expired = window.location.hash === '#expired';
+    if (expired) {
+      try { history.replaceState(null, '', window.location.pathname); } catch (e) { /* old browsers */ }
+    } else if (routeExisting()) return;
     A.fillCodes($('#lg-code'));
     A.initPage();
     A.initPasswordToggles();
@@ -85,6 +101,10 @@
     links();
     document.addEventListener('ayw:lang', links);
     $('#login').addEventListener('submit', onSubmit);
+    if (expired) {
+      $('#lg-error-body').textContent = A.apiMessage('session_expired');
+      $('#lg-error').hidden = false;
+    }
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

@@ -49,7 +49,7 @@
     setSending(true);
     A.call('change_password', { current_password: current, new_password: next })
       .then(function (res) {
-        A.saveSession(res);
+        if (!A.saveSession(res)) { setSending(false); showError('storage_blocked'); return; }
         window.location.replace('tracker.html');
       })
       .catch(function (err) {

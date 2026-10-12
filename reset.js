@@ -54,7 +54,12 @@
     A.post({ type: 'reset_complete', token: token, new_password: next })
       .then(function (res) {
         token = '';
-        A.saveSession(res);
+        if (!A.saveSession(res)) {
+          setSending(false);
+          $('#rs-error-body').textContent = A.apiMessage('storage_blocked');
+          $('#rs-error').hidden = false;
+          return;
+        }
         window.location.replace('tracker.html');
       })
       .catch(function (err) {

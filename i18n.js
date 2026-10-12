@@ -416,7 +416,7 @@ window.I18N = {
     'login.pw.label'  : 'كلمة السر',
     'login.pw.hint'   : 'أول مرة؟ استخدم كلمة السر اللي ظهرتلك بعد ما بعتّ الاستمارة، وهنطلب منك تغيّرها.',
     'login.submit'    : 'دخول',
-    'login.sending'   : 'بيدخل...',
+    'login.sending'   : 'Loading...',
     'login.forgot'    : 'نسيت كلمة السر؟',
     'login.forgot.msg': 'السلام عليكم، نسيت كلمة السر بتاعة حسابي في عاش يا وحش. ممكن تبعتلي لينك أعمل بيه كلمة سر جديدة؟',
     'login.register'  : 'لسه مسجّلتش؟ املا الاستمارة',
@@ -631,7 +631,10 @@ window.I18N = {
     'pp.11.h'   : 'برنامجك واللي بتسجّله',
     'pp.11.b'   : 'بنحفظ برنامجك واللي بتسجّله عليه: الحصص اللي عملتها، المجهود، ملاحظاتك، والمتابعات الأسبوعية (الوزن ومحيط البطن والطاقة). فريق التدريب بس هو اللي بيشوفها، عشان يتابعك ويظبط برنامجك.',
     'pp.12.h'   : 'تسجيل الدخول على جهازك',
-    'pp.12.b'   : 'المتصفح بيحتفظ بكود دخول عشان تفضل داخل لحد 30 يوم. لما تعمل "خروج" الكود بيتمسح وبيبطل يشتغل. مفيش أي cookies تانية ولا أي تتبّع.'
+    'pp.12.b'   : 'المتصفح بيحتفظ بكود دخول عشان تفضل داخل لحد 30 يوم. لما تعمل "خروج" الكود بيتمسح وبيبطل يشتغل. مفيش أي cookies تانية ولا أي تتبّع.',
+
+    /* --- login page -------------------------------------------------------- */
+    'api.storage_blocked': 'المتصفح ده مش بيسمح للموقع يفتكر إنك داخل، فهيرجّعك لصفحة الدخول. اقفل وضع التصفح الخفي (Private/Incognito)، أو افتح اللينك في Chrome أو Safari العادي، وجرّب تاني.'
   },
 
   /* ===========================================================================
@@ -1036,7 +1039,7 @@ window.I18N = {
     'login.pw.label'  : 'Password',
     'login.pw.hint'   : 'First time? Use the password shown after you sent the form — you will be asked to change it.',
     'login.submit'    : 'Log in',
-    'login.sending'   : 'Logging in...',
+    'login.sending'   : 'Loading...',
     'login.forgot'    : 'Forgot your password?',
     'login.forgot.msg': 'Hi, I forgot the password of my 3aash Ya Wa7sh account. Could you send me a link to set a new one?',
     'login.register'  : 'Not registered yet? Fill in the form',
@@ -1251,6 +1254,9 @@ window.I18N = {
     'pp.11.h'   : 'Your program and what you log',
     'pp.11.b'   : 'We store your program and what you log against it: the sessions you did, your effort, your notes and your weekly check-ins (weight, waist and energy). Only the coaching team sees it, to follow you up and adjust your program.',
     'pp.12.h'   : 'Staying logged in on your device',
-    'pp.12.b'   : 'Your browser keeps a login code so you stay signed in for up to 30 days. When you log out, the code is deleted and stops working. There are no other cookies and no tracking.'
+    'pp.12.b'   : 'Your browser keeps a login code so you stay signed in for up to 30 days. When you log out, the code is deleted and stops working. There are no other cookies and no tracking.',
+
+    /* --- login page -------------------------------------------------------- */
+    'api.storage_blocked': 'This browser will not let the site remember that you logged in, so it keeps sending you back to the login page. Turn off private/incognito browsing, or open the link in normal Chrome or Safari, and try again.'
   }
 };

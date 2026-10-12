@@ -66,15 +66,32 @@ window.AYW = (function () {
      Browser storage that can never throw (private mode, blocked cookies,
      storage full — all silently fall back to "no draft saving").
   --------------------------------------------------------------------------- */
+  /* Some phones block localStorage (private browsing, "block all cookies").
+     Then sessionStorage is tried: it lasts until the tab is closed, which is
+     enough to stay logged in while using the site. */
+  function areas() {
+    var out = [];
+    try { if (window.localStorage) out.push(window.localStorage); } catch (e) { /* blocked */ }
+    try { if (window.sessionStorage) out.push(window.sessionStorage); } catch (e) { /* blocked */ }
+    return out;
+  }
   var store = {
     get: function (key) {
-      try { return window.localStorage.getItem(key); } catch (e) { return null; }
+      var a = areas();
+      for (var i = 0; i < a.length; i++) {
+        try { var v = a[i].getItem(key); if (v !== null) return v; } catch (e) { /* try the next */ }
+      }
+      return null;
     },
     set: function (key, value) {
-      try { window.localStorage.setItem(key, value); return true; } catch (e) { return false; }
+      var a = areas();
+      for (var i = 0; i < a.length; i++) {
+        try { a[i].setItem(key, value); if (a[i].getItem(key) === value) return true; } catch (e) { /* try the next */ }
+      }
+      return false;
     },
     remove: function (key) {
-      try { window.localStorage.removeItem(key); } catch (e) { /* nothing to do */ }
+      areas().forEach(function (s) { try { s.removeItem(key); } catch (e) { /* nothing to do */ } });
     }
   };
 
@@ -285,14 +302,15 @@ window.AYW = (function () {
         return v && /^[0-9a-f]{64}$/.test(v.token) ? v : null;
       } catch (e) { return null; }
     },
-    set: function (data, key) { store.set(key || SESSION_KEY, JSON.stringify(data)); },
+    set: function (data, key) { return store.set(key || SESSION_KEY, JSON.stringify(data)); },
     clear: function (key) { store.remove(key || SESSION_KEY); }
   };
 
   /** Keep what a login/change/reset reply says about the session. */
+  /** Returns false when the browser would not keep it (storage blocked). */
   function saveSession(res, key) {
-    session.set({ token: res.session, scope: res.scope, name: res.name || '',
-                  username: res.username || '', exp: res.expires_at || '' }, key);
+    return session.set({ token: res.session, scope: res.scope, name: res.name || '',
+                         username: res.username || '', exp: res.expires_at || '' }, key);
   }
 
   /**
@@ -311,7 +329,8 @@ window.AYW = (function () {
       var code = err && err.code;
       if (code === 'session_expired' || code === 'forbidden') {
         session.clear(key);
-        if (opts.onExpired) opts.onExpired(); else window.location.replace('login.html');
+        /* #expired only tells the login page to say why; it carries no data. */
+        if (opts.onExpired) opts.onExpired(); else window.location.replace('login.html#expired');
       } else if (code === 'password_change_required' && !opts.onExpired) {
         window.location.replace('change-password.html');
       }
