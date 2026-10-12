@@ -28,6 +28,9 @@ function proxyBuilder(build) {
 function parseInput(v) {
   if (typeof v !== 'string') return v;
   if (v[0] === "'") return v.slice(1);
+  /* Sheets turns typed TRUE / FALSE into real booleans. */
+  if (v.toUpperCase() === 'TRUE') return true;
+  if (v.toUpperCase() === 'FALSE') return false;
   if (v[0] === '=' || v[0] === '+') {
     const f = v[0] === '=' ? v : '=' + v;
     const m = /^=\+(\d+)$/.exec(f);

@@ -210,7 +210,7 @@ section('8. Accounts');
   S.initSecrets_();
   S.createAccount_('AYW-2026-0009', '+201001240186', '=HYPERLINK("x")');
   const u = S.findUser_('participant_id', 'AYW-2026-0009');
-  check('new account: awaiting_plan, must change password', u.status === 'awaiting_plan' && u.must_change_password === 'TRUE');
+  check('new account: awaiting_plan, must change password', u.status === 'awaiting_plan' && S.isTrue_(u.must_change_password));
   check('default password checks out against the stored hash', S.checkPassword_('Default#0000', S.passwordRecordOf_(u)));
   check('default password window is 14 days',
     Math.abs((Date.parse(u.initial_expires_at) - Date.now()) / 864e5 - 14) < 0.01 && S.defaultPasswordActive_(u));
@@ -359,7 +359,7 @@ section('13. Intake creates the account');
   check('intake returns the username and the default password',
     r.ok && r.username === '+201012345678' && r.default_password === PROPS.DEFAULT_PASSWORD, r);
   const u = S.findUser_('participant_id', r.participant_id);
-  check('Users row: awaiting_plan, must change password', u && u.status === 'awaiting_plan' && u.must_change_password === 'TRUE');
+  check('Users row: awaiting_plan, must change password', u && u.status === 'awaiting_plan' && S.isTrue_(u.must_change_password));
   const again = post(S, Object.assign({}, ADULT, { submission_token: 'other', whatsapp: '+20 01012345678' }));
   check('same number again → phone_exists', again.ok === false && again.error === 'phone_exists', again);
   check('…and no second row anywhere', table(S, 'Submissions').length === 1 && table(S, 'Users').length === 1);
@@ -399,7 +399,7 @@ section('14. Login, first-login change, logout');
   check('good new password → full session', ok.ok && ok.scope === 'full' && /^[0-9a-f]{64}$/.test(ok.session), ok);
   check('the restricted session is revoked', S.resolveSession_(first.session) === null);
   const u = S.findUser_('username', '+201012345678');
-  check('must_change_password cleared, password_changed_at set', u.must_change_password === 'FALSE' && !!u.password_changed_at);
+  check('must_change_password cleared, password_changed_at set', !S.isTrue_(u.must_change_password) && !!u.password_changed_at);
 
   check('the default password no longer works', post(S, { type: 'login', username: '+201012345678', password: D }).error === 'bad_credentials');
   const full = post(S, { type: 'login', username: '+20 1012345678', password: 'Wa7sh!2026' });
@@ -597,7 +597,7 @@ section('19. Coach login and the role check');
   post(S, { type: 'logout', session: A.session });
   const before = table(S, 'Sessions').length;
   post(S, { type: 'coach_login', username: COACH.username, password: COACH.password });
-  check('coach login clears revoked sessions out of the tab', table(S, 'Sessions').every((r) => r.revoked !== 'TRUE') && table(S, 'Sessions').length <= before);
+  check('coach login clears revoked sessions out of the tab', table(S, 'Sessions').every((r) => !S.isTrue_(r.revoked)) && table(S, 'Sessions').length <= before);
 }
 
 section('20. Coach list, detail and brief');

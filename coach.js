@@ -178,7 +178,7 @@
     $('#c-name').textContent = i.name || '—';
     $('#c-id').textContent = d.participant_id;
     $('#c-user-line').textContent = u ? u.username : t('co.st.no_account');
-    var flags = { clearance: String(i.needs_medical_clearance) === 'TRUE', minor: String(i.is_minor) === 'TRUE',
+    var flags = { clearance: isTrue(i.needs_medical_clearance), minor: isTrue(i.is_minor),
                   default_active: !!(u && u.default_active), locked: !!(u && u.locked) };
     var bh = $('#c-badges'); bh.innerHTML = '';
     badges({ flags: flags }).forEach(function (b) { bh.appendChild(b); });
@@ -206,6 +206,10 @@
     renderIntake();
     $('#c-clear-box').hidden = !flags.clearance;
   }
+
+  /* The sheet may hold a flag as the text "TRUE" or as a real true/false
+     value (Sheets turns typed TRUE into a boolean). Both mean yes. */
+  function isTrue(v) { return v === true || String(v).toUpperCase() === 'TRUE'; }
 
   function firstName(n) { return String(n || '').trim().split(/\s+/)[0] || ''; }
 
@@ -376,7 +380,7 @@
         el('summary', null, t(g[0])),
         el('dl', { class: 'c-dl' }, rows.map(function (k) {
           var v = k === 'timestamp' ? fmtDay(i[k]) : String(i[k]);
-          var warn = (/^parq_/.test(k) && v === 'yes') || ((k === 'needs_medical_clearance' || k === 'is_minor') && v === 'TRUE');
+          var warn = (/^parq_/.test(k) && v === 'yes') || ((k === 'needs_medical_clearance' || k === 'is_minor') && isTrue(i[k]));
           return el('div', { class: 'c-dl__row' + (warn ? ' is-warn' : '') }, [el('dt', null, fieldLabel(k)), el('dd', { dir: 'auto' }, v)]);
         }))
       ]);
