@@ -55,6 +55,18 @@ if (!process.env.NO_PLAN) {
   S.updateRow_('Users', S.findUser_('participant_id', pid)._row, { status: 'active' });
 }
 
+/* Events for "Find Your Challenge": the newest batch file in docs/events. */
+try {
+  const dir = path.join(ROOT, 'docs', 'events');
+  const latest = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).sort().pop();
+  if (latest) {
+    const cs = S.createSession_(S.COACH_PID, 'coach', 'full').token;
+    const r = S.doPost({ postData: { contents: JSON.stringify({ type: 'coach_events_save', session: cs,
+      events_json: fs.readFileSync(path.join(dir, latest), 'utf8') }) } }).getContent();
+    console.log('events from ' + latest + ': ' + r);
+  }
+} catch (e) { console.log('no events loaded: ' + e.message); }
+
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
   '.json': 'application/json' };

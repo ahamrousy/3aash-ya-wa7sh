@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-i18n-doc="ev.doc">لاقي تحدّيك — عاش يا وحش</title>
+<meta name="description" data-i18n-doc="ev.meta" content="لاقي سباق أو تحدّي رياضي تشارك فيه — حتى لو لسه بتبدأ.">
+<meta name="theme-color" content="#394F9F">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="index, follow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="styles.css?v=7">
+<script>try{if(matchMedia('(prefers-reduced-motion: no-preference)').matches)document.documentElement.classList.add('motion')}catch(e){}</script>
+<link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+</head>
+<body>
+
+<a class="skip" href="#main" data-i18n="skip.link">تخطَّ للمحتوى</a>
+
+<header class="site-header">
+  <div class="wrap site-header__in">
+    <a class="brand" href="index.html">
+      <img class="brand__logo" src="assets/logo-sm.png" width="360" height="207"
+           alt="عاش يا وحش" data-i18n-alt="brand.name">
+      <small class="brand__tag" data-i18n="brand.tagline">ناس مننا مكملة في التغيير للأحسن</small>
+    </a>
+    <a class="hdr-link hdr-link--ev" href="events.html" aria-current="page" data-i18n="nav.events">لاقي تحدّيك</a>
+    <a class="hdr-link" href="login.html" data-i18n="nav.login">دخول</a>
+    <button type="button" class="lang" data-lang-toggle data-i18n-aria="lang.switch.aria">
+      <svg class="lang__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>
+      </svg>
+      <span data-i18n="lang.switch">English</span>
+    </button>
+  </div>
+</header>
+
+<main id="main" class="wrap wrap--wide evp">
+
+  <!-- ================= Hero ================= -->
+  <section class="evhero" aria-labelledby="ev-h1">
+    <div class="evhero__text">
+      <p class="evhero__kicker" data-i18n="ev.kicker"></p>
+      <h1 id="ev-h1" class="evhero__h" data-i18n="ev.h1">تحدّيك الجاي بيبدأ من هنا!</h1>
+      <p class="evhero__sub" data-i18n="ev.sub"></p>
+      <p class="evhero__cta">
+        <a class="btn btn--primary btn--lg" href="#ev-finder" id="ev-cta" data-i18n="ev.cta"></a>
+      </p>
+      <p class="evhero__line" data-i18n="ev.motto"></p>
+    </div>
+    <div class="evhero__art" aria-hidden="true" id="ev-art"></div>
+  </section>
+
+  <p id="ev-status" class="note" role="status" hidden></p>
+
+  <!-- ================= Perfect for someone starting ================= -->
+  <section id="ev-starters" class="evsec" aria-labelledby="ev-st-h" hidden>
+    <h2 id="ev-st-h" class="evsec__h" data-i18n="ev.starters.h"></h2>
+    <p class="evsec__sub" data-i18n="ev.starters.sub"></p>
+    <div id="ev-starters-list" class="evgrid evgrid--row"></div>
+  </section>
+
+  <!-- ================= Finder ================= -->
+  <section id="ev-finder" class="evsec" aria-labelledby="ev-f-h">
+    <h2 id="ev-f-h" class="evsec__h" data-i18n="ev.finder.h"></h2>
+
+    <div class="evsearch">
+      <label class="sr-only" for="ev-q" data-i18n="ev.f.search"></label>
+      <input class="input" id="ev-q" type="search" autocomplete="off" data-i18n-ph="ev.f.search.ph">
+      <label class="sr-only" for="ev-sort" data-i18n="ev.f.sort"></label>
+      <select class="input" id="ev-sort">
+        <option value="date" data-i18n="ev.sort.date"></option>
+        <option value="date_desc" data-i18n="ev.sort.date_desc"></option>
+        <option value="score" data-i18n="ev.sort.score"></option>
+        <option value="price" data-i18n="ev.sort.price"></option>
+        <option value="price_desc" data-i18n="ev.sort.price_desc"></option>
+      </select>
+    </div>
+
+    <details class="evfilters" id="ev-filters" open>
+      <summary><span data-i18n="ev.f.title"></span> <span class="evfilters__n" id="ev-fcount"></span></summary>
+      <div class="evfilters__grid">
+        <label class="evf"><span data-i18n="ev.f.sport"></span><select class="input" id="ev-cat"></select></label>
+        <label class="evf"><span data-i18n="ev.f.country"></span><select class="input" id="ev-country"></select></label>
+        <label class="evf"><span data-i18n="ev.f.city"></span><select class="input" id="ev-city"></select></label>
+        <label class="evf"><span data-i18n="ev.f.date"></span>
+          <select class="input" id="ev-date">
+            <option value="" data-i18n="ev.any"></option>
+            <option value="today" data-i18n="ev.date.today"></option>
+            <option value="tomorrow" data-i18n="ev.date.tomorrow"></option>
+            <option value="weekend" data-i18n="ev.date.weekend"></option>
+            <option value="7" data-i18n="ev.date.7"></option>
+            <option value="30" data-i18n="ev.date.30"></option>
+            <option value="90" data-i18n="ev.date.90"></option>
+            <option value="180" data-i18n="ev.date.180"></option>
+            <option value="365" data-i18n="ev.date.365"></option>
+            <option value="custom" data-i18n="ev.date.custom"></option>
+          </select>
+        </label>
+        <div class="evf evf--range" id="ev-range" hidden>
+          <label><span data-i18n="ev.from"></span><input class="input" type="date" id="ev-from"></label>
+          <label><span data-i18n="ev.to"></span><input class="input" type="date" id="ev-to"></label>
+        </div>
+        <label class="evf"><span data-i18n="ev.f.level"></span><select class="input" id="ev-level"></select></label>
+        <label class="evf"><span data-i18n="ev.f.price"></span>
+          <select class="input" id="ev-price">
+            <option value="" data-i18n="ev.any"></option>
+            <option value="free" data-i18n="ev.price.free"></option>
+            <option value="0-10" data-i18n="ev.price.10"></option>
+            <option value="10-25" data-i18n="ev.price.25"></option>
+            <option value="25-50" data-i18n="ev.price.50"></option>
+            <option value="50-100" data-i18n="ev.price.100"></option>
+            <option value="100-" data-i18n="ev.price.more"></option>
+            <option value="custom" data-i18n="ev.price.custom"></option>
+          </select>
+        </label>
+        <div class="evf evf--range" id="ev-prange" hidden>
+          <label><span data-i18n="ev.min.usd"></span><input class="input" type="number" min="0" id="ev-pmin" inputmode="numeric"></label>
+          <label><span data-i18n="ev.max.usd"></span><input class="input" type="number" min="0" id="ev-pmax" inputmode="numeric"></label>
+        </div>
+        <label class="evf"><span data-i18n="ev.f.part"></span>
+          <select class="input" id="ev-part">
+            <option value="" data-i18n="ev.any"></option>
+            <option value="individual" data-i18n="ev.part.individual"></option>
+            <option value="team" data-i18n="ev.part.team"></option>
+            <option value="both" data-i18n="ev.part.both"></option>
+          </select>
+        </label>
+        <label class="evf"><span data-i18n="ev.f.type"></span><select class="input" id="ev-type"></select></label>
+
+        <fieldset class="evf evf--wide">
+          <legend data-i18n="ev.f.time"></legend>
+          <div class="chips" id="ev-time"></div>
+        </fieldset>
+        <fieldset class="evf evf--wide">
+          <legend data-i18n="ev.f.status"></legend>
+          <div class="chips" id="ev-reg"></div>
+        </fieldset>
+      </div>
+      <p class="evfilters__foot">
+        <button type="button" class="btn btn--ghost btn--sm" id="ev-clear" data-i18n="ev.clear"></button>
+        <span class="c-hint" id="ev-fxnote"></span>
+      </p>
+    </details>
+
+    <p class="evcount" id="ev-count" role="status" aria-live="polite"></p>
+    <div id="ev-list" class="evgrid"></div>
+    <div id="ev-empty" class="wait" hidden>
+      <h3 data-i18n="ev.empty.h"></h3>
+      <p data-i18n="ev.empty.p"></p>
+      <p><button type="button" class="btn btn--primary" id="ev-empty-clear" data-i18n="ev.clear"></button></p>
+    </div>
+  </section>
+
+  <aside class="evnote">
+    <p data-i18n="ev.disclaimer"></p>
+  </aside>
+
+  <!-- ================= Event details ================= -->
+  <dialog id="ev-dlg" class="sheet evdlg" aria-labelledby="ev-d-title">
+    <div class="sheet__in">
+      <header class="evd__head">
+        <span class="evd__icon" id="ev-d-icon" aria-hidden="true"></span>
+        <div>
+          <p class="evd__sport" id="ev-d-sport"></p>
+          <h2 class="sheet__title" id="ev-d-title"></h2>
+          <p class="evd__where" id="ev-d-where"></p>
+        </div>
+        <button type="button" class="evd__close" id="ev-d-close" data-i18n-aria="ev.close">×</button>
+      </header>
+      <div class="evd__countdown" id="ev-d-count"></div>
+      <div class="evd__badges" id="ev-d-badges"></div>
+      <p id="ev-d-desc" class="evd__desc"></p>
+      <dl class="c-dl evd__facts" id="ev-d-facts"></dl>
+      <div class="evd__score" id="ev-d-score"></div>
+      <p class="note" id="ev-d-note"></p>
+      <div class="evd__actions">
+        <a class="btn btn--primary btn--lg" id="ev-d-register" target="_blank" rel="noopener noreferrer" data-i18n="ev.register.big"></a>
+        <p class="note" id="ev-d-noreg" hidden></p>
+        <div class="evd__row">
+          <button type="button" class="btn btn--ghost btn--sm" id="ev-d-fav"></button>
+          <button type="button" class="btn btn--ghost btn--sm" id="ev-d-share" data-i18n="ev.share"></button>
+          <a class="btn btn--ghost btn--sm" id="ev-d-site" target="_blank" rel="noopener noreferrer" data-i18n="ev.site"></a>
+        </div>
+        <div class="evd__row">
+          <span class="c-hint" data-i18n="ev.cal"></span>
+          <a class="btn btn--link" id="ev-d-gcal" target="_blank" rel="noopener noreferrer">Google</a>
+          <a class="btn btn--link" id="ev-d-ocal" target="_blank" rel="noopener noreferrer">Outlook</a>
+          <button type="button" class="btn btn--link" id="ev-d-ics" data-i18n="ev.ics"></button>
+        </div>
+        <p class="c-hint" id="ev-d-msg" role="status"></p>
+      </div>
+    </div>
+  </dialog>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <nav class="site-footer__nav" aria-label="footer">
+      <a href="index.html" data-i18n="pp.back">رجوع للاستمارة</a>
+      <a href="privacy.html" data-i18n="footer.privacy">سياسة الخصوصية</a>
+    </nav>
+    <p class="site-footer__note" data-i18n="footer.made"></p>
+    <p class="site-footer__rights">© <span id="year"></span> <span data-i18n="footer.rights"></span></p>
+  </div>
+</footer>
+
+<script src="config.js?v=7"></script>
+<script src="i18n.js?v=7"></script>
+<script src="common.js?v=7"></script>
+<script src="events.js?v=7"></script>
+</body>
+</html>

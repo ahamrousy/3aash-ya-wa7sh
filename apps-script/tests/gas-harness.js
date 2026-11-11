@@ -159,6 +159,17 @@ function load(opts) {
       ProtectionType: { SHEET: 'SHEET', RANGE: 'RANGE' },
       getUi: () => ({ createMenu: () => ({ addItem() { return this; }, addSeparator() { return this; }, addToUi() {} }) })
     },
+    /* Link checks: opts.urlCodes maps a URL to the status it "answers" (default 200). */
+    UrlFetchApp: { fetch: (url) => {
+      const code = opts.urlCodes && Object.prototype.hasOwnProperty.call(opts.urlCodes, url) ? opts.urlCodes[url] : 200;
+      if (code === 'throw') throw new Error('DNS error');
+      return { getResponseCode: () => code };
+    } },
+    ScriptApp: (() => {
+      const triggers = [];
+      const builder = (fn) => { const t = { getHandlerFunction: () => fn }; const b = new Proxy({}, { get: (o, k) => (k === 'create' ? () => { triggers.push(t); return t; } : () => b) }); return b; };
+      return { getProjectTriggers: () => triggers.slice(), deleteTrigger: (t) => triggers.splice(triggers.indexOf(t), 1), newTrigger: builder };
+    })(),
     MailApp: { sendEmail: (o, subject, body) => mails.push(typeof o === 'object' ? o : { to: o, subject, body }) },
     Session: { getScriptTimeZone: () => 'Africa/Cairo' },
     Utilities: {

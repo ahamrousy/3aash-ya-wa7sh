@@ -727,5 +727,99 @@ section('22. Reset links from the coach, status, notes, unlock');
   check('AuthLog has unlock', table(S, 'AuthLog').some((x) => x.event === 'unlock'));
 }
 
+/* ------------------------------------------------ phase 4: events */
+function ev(id, o) {
+  const S0 = load();
+  const start = S0.isoOfDay_(S0.dayNum_(S0.cairoDay_()) + 60);
+  return Object.assign({ event_id: id, title: { ar: 'سباق تجريبي', en: 'Test run' }, sport: 'Running', category: 'running',
+    country: 'Egypt', city: 'Cairo', start_date: start, start_time: '07:00', price_from: 500, currency: 'EGP',
+    registration_url: 'https://example.org/register/' + id, official_website: 'https://example.org', organizer: 'Test Org',
+    participation_type: 'individual', event_type: 'race', difficulty: 'beginner', beginner_friendly: 'yes',
+    distances: '5K, 10K', description: { ar: 'وصف', en: 'Description' }, registration_status: 'open',
+    verification_status: 'verified', source_url: 'https://example.org', last_verified: S0.cairoDay_() }, o || {});
+}
+
+section('23. Events: import, validation and the public list');
+{
+  const S = load({ props: PROPS });
+  const cs = coach(S);
+  const save = (events) => post(S, { type: 'coach_events_save', session: cs, events_json: JSON.stringify(events) });
+  const past = S.isoOfDay_(S.dayNum_(S.cairoDay_()) - 3);
+
+  const bad = save([ev('ok-one'), ev('Bad ID!'), ev('x2', { start_date: '2027-02-30' }), ev('x3', { registration_url: 'javascript:alert(1)' }),
+                    ev('x4', { difficulty: 'superhuman' }), ev('x5', { price_from: 100, currency: '' })]);
+  check('a bad import is refused, every problem listed, nothing saved',
+    bad.error === 'invalid_events' && bad.errors.length >= 5 && table(S, 'Events').length === 0, bad.errors);
+  check('a participant cannot import events', post(S, { type: 'coach_events_save', session: member(S, '1011111111').session, events: [ev('a1')] }).error === 'forbidden');
+
+  const r = save([ev('open-5k'), ev('unverified-run', { verification_status: 'unverified' }), ev('old-run', { start_date: past }),
+                  ev('archived-run', { archived: true }), ev('closed-run', { registration_status: 'closed' }),
+                  ev('canceled-run', { verification_status: 'canceled' }), ev('broken-link'),
+                  ev('free-walk', { price_from: 0, difficulty: 'complete_beginner', event_type: 'charity' }),
+                  ev('pro-ultra', { difficulty: 'professional', beginner_friendly: 'no', price_from: 400, currency: 'USD', country: 'Spain' })]);
+  check('a clean import saves every event', r.ok && r.counts.created === 9, r);
+  check('importing the same file again changes nothing', save([ev('open-5k')]).counts.unchanged === 1);
+  const upd = save([ev('open-5k', { price_from: 650 })]);
+  check('a changed field updates in place and is logged in EventHistory',
+    upd.counts.updated === 1 && table(S, 'EventHistory').some((h) => h.event_id === 'open-5k' && h.field === 'price_from' && String(h.new_value) === '650'));
+
+  const pub = JSON.parse(S.doPost({ postData: { contents: JSON.stringify({ type: 'events_list' }) } }).getContent());
+  const ids = pub.events.map((e) => e.event_id);
+  check('public list hides unverified, archived and past events', !ids.includes('unverified-run') && !ids.includes('archived-run') && !ids.includes('old-run'), ids);
+  check('…and keeps closed and canceled ones (shown with their status)', ids.includes('closed-run') && ids.includes('canceled-run'));
+  const get = (id) => pub.events.find((e) => e.event_id === id);
+  check('register button only for verified + open', get('open-5k').can_register && !get('closed-run').can_register && !get('canceled-run').can_register);
+  check('titles come back in both languages', get('open-5k').title.en === 'Test run' && get('open-5k').title.ar === 'سباق تجريبي');
+  check('Commitment Score: free beginner charity walk > professional ultra abroad',
+    get('free-walk').commitment_score > get('pro-ultra').commitment_score && get('pro-ultra').commitment_score < 50 &&
+    get('free-walk').commitment_score <= 100, [get('free-walk').commitment_score, get('pro-ultra').commitment_score]);
+  check('score parts add up to the score', Object.values(get('open-5k').score_parts).reduce((a, b) => a + b, 0) === get('open-5k').commitment_score);
+  check('prices converted to USD only with a known rate', get('open-5k').price_usd === Math.round(650 * 0.0205 * 100) / 100 && pub.fx.date);
+  check('the public list carries no participant data', !/participant_id|whatsapp|username/.test(JSON.stringify(pub)));
+
+  const act = (id, action) => post(S, { type: 'coach_event_action', session: cs, event_id: id, action });
+  check('coach can cancel an event', act('broken-link', 'cancel').ok && table(S, 'Events').find((e) => e.event_id === 'broken-link').verification_status === 'canceled');
+  check('an unknown action is refused', act('open-5k', 'delete-everything').error === 'invalid');
+  const list = post(S, { type: 'coach_events_list', session: cs });
+  check('coach list shows everything, including archived and unverified', list.ok && list.events.length === 9);
+}
+
+section('24. Events: favourites and the daily check');
+{
+  const S = load({ props: PROPS, urlCodes: { 'https://example.org/register/dead': 404, 'https://example.org/register/robots': 403,
+                                             'https://example.org/register/gone': 'throw' } });
+  const cs = coach(S);
+  const past = S.isoOfDay_(S.dayNum_(S.cairoDay_()) - 2);
+  const yesterday = S.isoOfDay_(S.dayNum_(S.cairoDay_()) - 1);
+  post(S, { type: 'coach_events_save', session: cs, events: [ev('live'), ev('dead'), ev('robots'), ev('gone'),
+    ev('finished', { start_date: past }), ev('deadline-passed', { registration_deadline: yesterday })] });
+
+  const A = member(S, '1011111111');
+  check('saving a favourite needs a login', post(S, { type: 'fav_toggle', event_id: 'live' }).error === 'session_expired');
+  check('save → saved', post(S, { type: 'fav_toggle', session: A.session, event_id: 'live' }).saved === true);
+  check('fav_list returns it', post(S, { type: 'fav_list', session: A.session }).event_ids.join() === 'live');
+  check('toggle again → removed', post(S, { type: 'fav_toggle', session: A.session, event_id: 'live' }).saved === false &&
+    post(S, { type: 'fav_list', session: A.session }).event_ids.length === 0);
+  check('an unknown event cannot be saved', post(S, { type: 'fav_toggle', session: A.session, event_id: 'nope-123' }).error === 'not_found');
+  post(S, { type: 'fav_toggle', session: A.session, event_id: 'live' });
+  S.deleteParticipant(A.pid);
+  check('deleting a participant deletes their favourites', table(S, 'Favorites').length === 0);
+
+  const rep = S.dailyEventMaintenance();
+  const row = (id) => table(S, 'Events').find((e) => e.event_id === id);
+  check('daily check archives finished events', S.isTrue_(row('finished').archived) && rep.archived === 1, rep);
+  check('…closes registration after the deadline', row('deadline-passed').registration_status === 'closed');
+  check('…marks dead links broken, robot-blocking sites "blocked", errors broken',
+    /^broken 404/.test(row('dead').link_status) && /^blocked 403/.test(row('robots').link_status) &&
+    /^broken no answer/.test(row('gone').link_status) && /^ok 200/.test(row('live').link_status), [row('dead').link_status, row('robots').link_status]);
+  const pub = JSON.parse(S.doPost({ postData: { contents: '{"type":"events_list"}' } }).getContent());
+  check('a broken link removes the register button', pub.events.find((e) => e.event_id === 'dead').can_register === false &&
+    pub.events.find((e) => e.event_id === 'robots').can_register === true);
+  check('the daily check is recorded', /archived/.test(S.__state.props.EVENTS_LAST_CHECK || ''));
+  S.installDailyEventCheck(); S.installDailyEventCheck();
+  check('installing the daily check twice keeps one trigger',
+    S.ScriptApp.getProjectTriggers().filter((t) => t.getHandlerFunction() === 'dailyEventMaintenance').length === 1);
+}
+
 console.log('\n================  ' + pass + ' passed, ' + fail + ' failed  ================\n');
 process.exit(fail ? 1 : 0);

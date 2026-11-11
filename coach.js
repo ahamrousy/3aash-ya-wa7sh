@@ -27,7 +27,7 @@
   }
 
   function show(id) {
-    ['c-login', 'c-list', 'c-detail'].forEach(function (s) { $('#' + s).hidden = s !== id; });
+    ['c-login', 'c-list', 'c-detail', 'c-events'].forEach(function (s) { $('#' + s).hidden = s !== id; });
     $('#c-logout').hidden = id === 'c-login';
     window.scrollTo(0, 0);
   }
@@ -506,6 +506,125 @@
       .then(function () { paintPublish(); });
   }
 
+
+  /* ---------------------------------------------------------------------------
+     Events (Find Your Challenge): import, list, verify, cancel, archive.
+     Editing is done as JSON — "Edit" puts one event in the box, change it,
+     press Save. The server checks every field before anything is written.
+  --------------------------------------------------------------------------- */
+  var EV_TEMPLATE = {
+    event_id: 'cairo-runners-5k-2027-01', title: { ar: 'اسم الفعالية', en: 'Event name' },
+    sport: 'Running', category: 'running', country: 'Egypt', city: 'Cairo', venue: '',
+    start_date: '2027-01-15', start_time: '07:00', end_date: '', timezone: 'Africa/Cairo', registration_deadline: '',
+    price_from: 0, price_to: null, currency: 'EGP', price_note: '',
+    registration_url: 'https://', official_website: 'https://', organizer: '',
+    participation_type: 'individual', event_type: 'race', difficulty: 'beginner', beginner_friendly: 'yes',
+    minimum_age: null, distances: '5K', duration: '', equipment: '', fitness_requirements: '',
+    description: { ar: '', en: '' }, registration_status: 'open', verification_status: 'unverified',
+    source_url: 'https://', last_verified: ''
+  };
+  var EV_EDITABLE = Object.keys(EV_TEMPLATE).concat(['archived']);
+  var evState = { list: [] };
+
+  function loadEvents() {
+    show('c-events');
+    $('#c-ev-count').textContent = t('co.loading');
+    return call('coach_events_list')
+      .then(function (res) {
+        evState.list = res.events || [];
+        var lc = String(res.last_check || '');
+        $('#c-ev-check').textContent = lc
+          ? t('co.ev.lastcheck', { when: fmtDay(lc.split(' ')[0]), report: lc.split(' ').slice(1).join(' ') })
+          : t('co.ev.nocheck');
+        renderEvents();
+      })
+      .catch(function (err) { $('#c-ev-count').textContent = A.apiMessage(err && err.code); });
+  }
+
+  function needsAttention(e) {
+    return !e.archived && (e.verification_status === 'unverified' || e.stale || /^broken/.test(e.link_status || ''));
+  }
+
+  function renderEvents() {
+    var q = $('#c-ev-q').value.trim().toLowerCase(), f = $('#c-ev-filter').value;
+    var host = $('#c-ev-rows');
+    host.innerHTML = '';
+    var list = evState.list.filter(function (e) {
+      if (f === 'archived' ? !e.archived : e.archived) return false;
+      if (f === 'attention' && !needsAttention(e)) return false;
+      if (f === 'unverified' && e.verification_status !== 'unverified') return false;
+      if (!q) return true;
+      return [e.event_id, e.title.ar, e.title.en, e.sport, e.city, e.country].join(' ').toLowerCase().indexOf(q) !== -1;
+    });
+    $('#c-ev-count').textContent = t('co.ev.count', { n: list.length, all: evState.list.length });
+    list.forEach(function (e) {
+      var flags = [
+        badge(e.verification_status === 'verified' ? 'blue' : e.verification_status === 'canceled' ? 'red' : 'amber', 'ev.ver.' + e.verification_status),
+        el('span', { class: 'badge badge--blue' }, t('ev.reg.' + (e.registration_status === 'unknown' ? 'soon' : e.registration_status)))
+      ];
+      if (e.stale) flags.push(badge('amber', 'co.ev.stale'));
+      if (/^broken/.test(e.link_status || '')) flags.push(el('span', { class: 'badge badge--red' }, t('co.ev.broken') + ' (' + e.link_status + ')'));
+      if (/^blocked/.test(e.link_status || '')) flags.push(badge('amber', 'co.ev.blocked'));
+      if (e.saved_by) flags.push(el('span', { class: 'badge badge--blue' }, t('co.ev.saved', { n: e.saved_by })));
+      var act = function (key, action) {
+        return el('button', { type: 'button', class: 'btn btn--ghost', on: { click: function () { eventAction(e.event_id, action); } } }, t(key));
+      };
+      host.appendChild(el('div', { class: 'c-ev-row' + (e.archived ? ' is-archived' : '') }, [
+        el('div', null, [
+          el('div', { class: 'c-ev-row__t' }, e.title.ar || e.title.en),
+          el('div', { class: 'c-hint', dir: 'ltr' }, e.event_id),
+          el('div', { class: 'c-badges' }, flags)
+        ]),
+        el('div', null, [
+          fmtDay(e.start_date) + (e.start_time ? ' ' + e.start_time : ''), el('br'),
+          [e.city, e.country].filter(Boolean).join('، '), el('br'),
+          t('co.ev.score', { n: e.commitment_score })
+        ]),
+        el('div', { class: 'c-ev-actions' }, [
+          el('button', { type: 'button', class: 'btn btn--ghost', on: { click: function () { editEvent(e); } } }, t('co.ev.edit')),
+          e.verification_status !== 'verified' ? act('co.ev.verify', 'verify') : null,
+          e.verification_status !== 'canceled' ? act('co.ev.cancel', 'cancel') : null,
+          e.verification_status !== 'postponed' ? act('co.ev.postpone', 'postpone') : null,
+          e.archived ? act('co.ev.restore', 'restore') : act('co.ev.archive', 'archive'),
+          e.registration_url ? el('a', { class: 'btn btn--ghost', href: e.registration_url, target: '_blank', rel: 'noopener noreferrer' }, t('co.ev.link')) : null
+        ])
+      ]));
+    });
+  }
+
+  function editEvent(e) {
+    var o = {};
+    EV_EDITABLE.forEach(function (k) { if (e[k] !== undefined) o[k] = e[k]; });
+    $('#c-ev-json').value = JSON.stringify([o], null, 2);
+    $('#c-ev-msg').textContent = t('co.ev.editing', { id: e.event_id });
+    $('#c-ev-json').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    $('#c-ev-json').focus();
+  }
+
+  function saveEvents() {
+    $('#c-ev-errors').hidden = true;
+    $('#c-ev-msg').textContent = t('co.saving');
+    call('coach_events_save', { events_json: $('#c-ev-json').value })
+      .then(function (res) {
+        $('#c-ev-msg').textContent = t('co.ev.saved_counts', res.counts);
+        return loadEvents();
+      })
+      .catch(function (err) {
+        $('#c-ev-msg').textContent = '';
+        var list = (err && err.detail && err.detail.errors) || [A.apiMessage(err && err.code)];
+        var ul = $('#c-ev-errlist'); ul.innerHTML = '';
+        list.forEach(function (m) { ul.appendChild(el('li', { dir: 'auto' }, m)); });
+        $('#c-ev-errors').hidden = false;
+      });
+  }
+
+  function eventAction(id, action) {
+    if ((action === 'cancel' || action === 'archive') && !window.confirm(t('co.ev.confirm.' + action, { id: id }))) return;
+    call('coach_event_action', { event_id: id, action: action })
+      .then(loadEvents)
+      .catch(function (err) { $('#c-ev-count').textContent = A.apiMessage(err && err.code); });
+  }
+
   /* ---------------------------------------------------------------------------
      Start-up
   --------------------------------------------------------------------------- */
@@ -523,6 +642,12 @@
     $('#c-login-form').addEventListener('submit', onLogin);
     $('#c-logout').addEventListener('click', logout);
     $('#c-refresh').addEventListener('click', loadList);
+    $('#c-to-events').addEventListener('click', loadEvents);
+    $('#c-ev-back').addEventListener('click', function () { show('c-list'); renderList(); });
+    $('#c-ev-save').addEventListener('click', saveEvents);
+    $('#c-ev-template').addEventListener('click', function () { $('#c-ev-json').value = JSON.stringify([EV_TEMPLATE], null, 2); });
+    $('#c-ev-q').addEventListener('input', renderEvents);
+    $('#c-ev-filter').addEventListener('change', renderEvents);
     $('#c-search').addEventListener('input', renderList);
     $('#c-filter').addEventListener('change', renderList);
     $('#c-back').addEventListener('click', function () { show('c-list'); renderList(); });

@@ -771,6 +771,9 @@ function onOpen() {
     .addItem('Delete test participant', 'deleteTestParticipant')
     .addItem('Delete a participant (deletion request)…', 'deleteParticipantFromMenu')
     .addItem('Time the password hashing', 'benchmarkHashing')
+    .addSeparator()
+    .addItem('Turn on the daily event check', 'installDailyEventCheck')
+    .addItem('Run the event check now', 'dailyEventMaintenance')
     .addToUi();
 }
 
@@ -2574,7 +2577,7 @@ function deleteParticipant(pid) {
     var removed = {};
     removed[SHEET_MAIN] = deleteRowsWhere_(ss.getSheetByName(SHEET_MAIN), HEADERS, 'participant_id', isPid);
     removed[SHEET_CHECKINS] = deleteRowsWhere_(ss.getSheetByName(SHEET_CHECKINS), CHECKIN_HEADERS, 'participant_id', isPid);
-    [SHEET_USERS, SHEET_SESSIONS, SHEET_RESETS, SHEET_PLANS, SHEET_PLAN_SESSIONS, SHEET_LOGS, SHEET_PROGRESS].forEach(function (name) {
+    [SHEET_USERS, SHEET_SESSIONS, SHEET_RESETS, SHEET_PLANS, SHEET_PLAN_SESSIONS, SHEET_LOGS, SHEET_PROGRESS, 'Favorites'].forEach(function (name) {
       removed[name] = deleteRowsWhere_(ss.getSheetByName(name), TABS[name].headers, 'participant_id', isPid);
     });
     if (user) {
@@ -2607,3 +2610,451 @@ function benchmarkHashing() {
   try { SpreadsheetApp.getActiveSpreadsheet().toast(msg, '3aash Ya Wa7sh', 15); } catch (e) { /* editor */ }
   return msg;
 }
+
+
+
+/* ###########################################################################
+   PHASE 4 — FIND YOUR CHALLENGE (sports events people can take part in)
+   ###########################################################################
+   Events live in the Events tab, one row each. They are researched and
+   checked against the organiser's own site, then imported or edited in the
+   coach console. The public page reads them with `events_list`; nothing here
+   ever registers anyone — the button always goes to the official site.
+
+   A daily trigger (menu: "Turn on the daily event check") archives past
+   events, closes registration after the deadline, and checks that every
+   registration link still answers. Every change is written to EventHistory.
+   ######################################################################## */
+
+var SHEET_EVENTS    = 'Events';
+var SHEET_EVHISTORY = 'EventHistory';
+var SHEET_FAVORITES = 'Favorites';
+
+TABS.Events = {
+  headers: ['event_id', 'title', 'sport', 'category', 'country', 'city', 'venue', 'start_date', 'start_time',
+            'end_date', 'timezone', 'registration_deadline', 'price_from', 'price_to', 'currency', 'price_note',
+            'registration_url', 'official_website', 'organizer', 'participation_type', 'event_type', 'difficulty',
+            'beginner_friendly', 'minimum_age', 'distances', 'duration', 'equipment', 'fitness_requirements',
+            'description', 'registration_status', 'verification_status', 'source_url', 'last_verified',
+            'link_status', 'link_checked_at', 'archived', 'created_at', 'updated_at'],
+  numeric: { price_from: true, price_to: true, minimum_age: true }
+};
+TABS.EventHistory = {
+  headers: ['timestamp', 'event_id', 'field', 'old_value', 'new_value', 'by'],
+  numeric: {}
+};
+TABS.Favorites = {
+  headers: ['participant_id', 'event_id', 'created_at'],
+  numeric: {}
+};
+
+/* Allowed values. The sport itself is free text, so a new sport needs no code. */
+var EV = {
+  CATEGORIES:   ['running', 'swimming', 'cycling', 'multisport', 'fitness', 'obstacle', 'hiking', 'team',
+                 'racket', 'combat', 'water', 'winter', 'adventure', 'dance', 'recreational', 'other'],
+  PARTICIPATION:['individual', 'team', 'both'],
+  TYPES:        ['race', 'challenge', 'charity', 'fitness', 'adventure', 'festival', 'tournament'],
+  DIFFICULTY:   ['complete_beginner', 'beginner', 'amateur', 'intermediate', 'advanced', 'professional'],
+  BEGINNER:     ['yes', 'no', 'unknown'],
+  REG_STATUS:   ['open', 'soon', 'closed', 'sold_out', 'unknown'],
+  VERIFICATION: ['verified', 'partial', 'unverified', 'canceled', 'postponed']
+};
+
+/* Approximate rates to US dollars, used ONLY for the price filter and the
+   affordability part of the score — never shown as a price. The page says
+   they are approximate and when they were set. */
+var FX_TO_USD = { USD: 1, EGP: 0.0205, AED: 0.272, SAR: 0.267, QAR: 0.275, KWD: 3.26, BHD: 2.65,
+                  OMR: 2.6, JOD: 1.41, EUR: 1.08, GBP: 1.27, TRY: 0.029, MAD: 0.1 };
+var FX_DATE = '2026-11';
+
+/* ------------------------------------------------------------ validation */
+function evDate_(v) {
+  var s = v instanceof Date ? cairoDay_(v) : String(v == null ? '' : v).trim();
+  if (!s) return '';
+  var n = dayNum_(s);
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) && isFinite(n) && isoOfDay_(n) === s ? s : null;
+}
+function evTime_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, 'Africa/Cairo', 'HH:mm');
+  var s = String(v == null ? '' : v).trim();
+  if (!s) return '';
+  var m = /^(\d{1,2}):(\d{2})$/.exec(s);
+  return m && Number(m[1]) < 24 && Number(m[2]) < 60 ? padLeft_(Number(m[1]), 2) + ':' + m[2] : null;
+}
+function evUrl_(v) {
+  var s = String(v == null ? '' : v).trim();
+  if (!s) return '';
+  return /^https?:\/\/[^\s"'<>]+$/i.test(s) && s.length <= 500 ? s : null;
+}
+function evEnum_(v, list, dflt) {
+  var s = String(v == null ? '' : v).trim().toLowerCase();
+  if (!s) return dflt;
+  return list.indexOf(s) === -1 ? null : s;
+}
+function evBi_(v, max) {
+  var o = typeof v === 'object' && v ? v : biText_(v);
+  return { ar: stripHtml_(o.ar || '').trim().slice(0, max), en: stripHtml_(o.en || '').trim().slice(0, max) };
+}
+
+/**
+ * Clean one event object (from an import or the edit form). Returns
+ * {event, errors}. Missing facts stay empty and show as "Unknown" — never
+ * guessed.
+ */
+function cleanEvent_(e) {
+  var errs = [];
+  var out = {};
+  var bad = function (f, why) { errs.push(f + ': ' + why); };
+  e = e || {};
+
+  out.event_id = String(e.event_id || '').trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9\-]{2,60}$/.test(out.event_id)) bad('event_id', 'letters, numbers and dashes, 3–60 characters');
+  var title = evBi_(e.title, 120);
+  if (!title.ar && !title.en) bad('title', 'required (Arabic or English)');
+  out.title = JSON.stringify(title);
+  out.sport = clean_(e.sport, 40);
+  if (!out.sport) bad('sport', 'required');
+  out.category = evEnum_(e.category, EV.CATEGORIES, 'other');
+  if (out.category === null) { bad('category', 'one of ' + EV.CATEGORIES.join(', ')); out.category = ''; }
+  out.country = clean_(e.country, 40);
+  if (!out.country) bad('country', 'required');
+  out.city = clean_(e.city, 60);
+  out.venue = clean_(e.venue, 120);
+
+  ['start_date', 'end_date', 'registration_deadline'].forEach(function (f) {
+    out[f] = evDate_(e[f]);
+    if (out[f] === null) { bad(f, 'a real date YYYY-MM-DD'); out[f] = ''; }
+  });
+  if (!out.start_date) bad('start_date', 'required');
+  if (out.end_date && out.start_date && out.end_date < out.start_date) bad('end_date', 'before start_date');
+  out.start_time = evTime_(e.start_time);
+  if (out.start_time === null) { bad('start_time', 'HH:MM, 24-hour'); out.start_time = ''; }
+  out.timezone = clean_(e.timezone, 40);
+
+  ['price_from', 'price_to'].forEach(function (f) {
+    var v = e[f];
+    if (v === '' || v === null || v === undefined) { out[f] = ''; return; }
+    var n = Number(v);
+    if (!isFinite(n) || n < 0 || n > 100000) { bad(f, 'a number ≥ 0, or empty'); out[f] = ''; } else out[f] = n;
+  });
+  out.currency = String(e.currency || '').trim().toUpperCase().slice(0, 3);
+  if (out.price_from !== '' && !/^[A-Z]{3}$/.test(out.currency)) bad('currency', '3-letter code like EGP or USD');
+  out.price_note = JSON.stringify(evBi_(e.price_note, 200));
+
+  ['registration_url', 'official_website', 'source_url'].forEach(function (f) {
+    out[f] = evUrl_(e[f]);
+    if (out[f] === null) { bad(f, 'must start with http:// or https://'); out[f] = ''; }
+  });
+  out.organizer = clean_(e.organizer, 100);
+  out.participation_type = evEnum_(e.participation_type, EV.PARTICIPATION, '');
+  out.event_type = evEnum_(e.event_type, EV.TYPES, '');
+  out.difficulty = evEnum_(e.difficulty, EV.DIFFICULTY, '');
+  out.beginner_friendly = evEnum_(e.beginner_friendly, EV.BEGINNER, 'unknown');
+  out.registration_status = evEnum_(e.registration_status, EV.REG_STATUS, 'unknown');
+  out.verification_status = evEnum_(e.verification_status, EV.VERIFICATION, 'unverified');
+  ['participation_type', 'event_type', 'difficulty', 'beginner_friendly', 'registration_status', 'verification_status']
+    .forEach(function (f) { if (out[f] === null) { bad(f, 'not an allowed value'); out[f] = ''; } });
+  var age = e.minimum_age;
+  out.minimum_age = age === '' || age === null || age === undefined ? '' : (Number(age) >= 0 && Number(age) <= 99 ? Number(age) : '');
+  out.distances = clean_(e.distances, 120);
+  /* Short notes can be one language or {ar, en}, like the title. */
+  out.duration = JSON.stringify(evBi_(e.duration, 80));
+  out.equipment = JSON.stringify(evBi_(e.equipment, 200));
+  out.fitness_requirements = JSON.stringify(evBi_(e.fitness_requirements, 300));
+  out.description = JSON.stringify(evBi_(e.description, 800));
+  out.last_verified = evDate_(e.last_verified) || '';
+  out.archived = isTrue_(e.archived) ? 'TRUE' : 'FALSE';
+  return { event: out, errors: errs };
+}
+
+/* --------------------------------------------------------------- reading */
+function eventRows_() { return readRows_(SHEET_EVENTS); }
+
+function usd_(amount, currency) {
+  var r = FX_TO_USD[String(currency || '').toUpperCase()];
+  return r && amount !== '' && amount !== null && amount !== undefined ? Math.round(Number(amount) * r * 100) / 100 : null;
+}
+
+/**
+ * Commitment Score, 0–100: how likely this event is to get someone who does
+ * not train yet to start. Popularity plays no part. Each part is returned so
+ * the page can explain the number.
+ */
+function commitmentScore_(e, todayN) {
+  var parts = {};
+  parts.beginner = { complete_beginner: 25, beginner: 22, amateur: 15, intermediate: 8, advanced: 3, professional: 0 }[e.difficulty];
+  if (parts.beginner === undefined) parts.beginner = e.beginner_friendly === 'yes' ? 18 : 8;
+  if (e.beginner_friendly === 'no') parts.beginner = Math.min(parts.beginner, 5);
+  parts.individual = e.participation_type === 'individual' || e.participation_type === 'both' ? 20
+                   : e.participation_type === 'team' ? 8 : 10;
+  var days = dayNum_(e.start_date) - todayN;
+  parts.prep = days < 14 ? 2 : days < 30 ? 6 : days < 60 ? 10 : days <= 180 ? 15 : 12;
+  var usd = usd_(e.price_from, e.currency);
+  parts.price = e.price_from === 0 ? 15 : usd === null ? 7 : usd <= 10 ? 13 : usd <= 25 ? 11 : usd <= 50 ? 8 : usd <= 100 ? 5 : 2;
+  parts.excitement = { festival: 15, charity: 14, challenge: 13, race: 12, adventure: 12, fitness: 11, tournament: 9 }[e.event_type] || 9;
+  var c = String(e.country || '').toLowerCase();
+  parts.access = /egypt|مصر/.test(c) ? 10 : /emirates|uae|saudi|qatar|jordan|bahrain|kuwait|oman/.test(c) ? 7 : 4;
+  var total = Object.keys(parts).reduce(function (s, k) { return s + parts[k]; }, 0);
+  /* A hard event must never rank as a starter event, whatever else it offers. */
+  var cap = e.difficulty === 'professional' ? 20 : e.difficulty === 'advanced' ? 35 : e.beginner_friendly === 'no' ? 45 : 100;
+  if (total > cap) { parts.cap = cap - total; total = cap; }
+  return { score: Math.max(0, Math.min(100, total)), parts: parts };
+}
+
+/** What the public page gets for one event. */
+function publicEvent_(r, todayN) {
+  var e = {};
+  TABS.Events.headers.forEach(function (h) {
+    var v = r[h];
+    e[h] = v instanceof Date ? (/date|deadline|verified/.test(h) ? cairoDay_(v) : (h === 'start_time' ? evTime_(v) : isoOf_(v))) : fromCell_(v);
+  });
+  ['title', 'description', 'price_note', 'duration', 'equipment', 'fitness_requirements'].forEach(function (f) { e[f] = biText_(e[f]); });
+  ['start_date', 'end_date', 'registration_deadline', 'last_verified'].forEach(function (f) { e[f] = evDate_(e[f]) || ''; });
+  e.start_time = evTime_(e.start_time) || '';
+  e.price_from = num_(e.price_from);
+  e.price_to = num_(e.price_to);
+  e.minimum_age = num_(e.minimum_age);
+  e.price_usd = e.price_from === null ? null : usd_(e.price_from, e.currency);
+  var cs = commitmentScore_(e, todayN);
+  e.commitment_score = cs.score;
+  e.score_parts = cs.parts;
+  /* The register button only for a checked, open registration with a live link. */
+  e.can_register = e.verification_status === 'verified' && e.registration_status === 'open' && !!e.registration_url &&
+                   String(e.link_status || '').indexOf('broken') !== 0;
+  delete e.archived;
+  return e;
+}
+
+/* ---------------------------------------------------------- public route */
+/** Events the public page may show: not archived, not unverified, not over. */
+function handleEventsList(body) {
+  var today = cairoDay_();
+  var cache = null, hit = null;
+  try { cache = CacheService.getScriptCache(); hit = cache.get('events_public'); } catch (e) { hit = null; }
+  if (hit) return ContentService.createTextOutput(hit).setMimeType(ContentService.MimeType.JSON);
+  var todayN = dayNum_(today);
+  var list = eventRows_().filter(function (r) {
+    return r.event_id && !isTrue_(r.archived) && String(r.verification_status) !== 'unverified';
+  }).map(function (r) { return publicEvent_(r, todayN); })
+    .filter(function (e) { return e.start_date && (e.end_date || e.start_date) >= today; })
+    .sort(function (a, b) { return a.start_date.localeCompare(b.start_date); });
+  var out = JSON.stringify({ ok: true, today: today, fx: { date: FX_DATE, to_usd: FX_TO_USD }, events: list });
+  /* Short cache: a closed registration must not look open for long. */
+  try { if (cache && out.length < 90000) cache.put('events_public', out, 300); } catch (e) { /* too big for the cache */ }
+  return ContentService.createTextOutput(out).setMimeType(ContentService.MimeType.JSON);
+}
+
+function clearEventsCache_() { try { CacheService.getScriptCache().remove('events_public'); } catch (e) { /* none */ } }
+
+/* -------------------------------------------------------- favourites */
+function handleFavList(body) {
+  var a = auth_(body, 'participant');
+  if (a.reply) return a.reply;
+  var ids = readRows_(SHEET_FAVORITES).filter(function (r) { return String(r.participant_id) === a.s.pid; })
+    .map(function (r) { return String(r.event_id); });
+  return json({ ok: true, event_ids: ids });
+}
+
+function handleFavToggle(body) {
+  var a = auth_(body, 'participant');
+  if (a.reply) return a.reply;
+  var id = clean_(body.event_id, 64).toLowerCase();
+  if (!/^[a-z0-9][a-z0-9\-]{2,60}$/.test(id)) return fail_('invalid');
+  return withLock_(function () {
+    if (!eventRows_().some(function (r) { return String(r.event_id) === id; })) return fail_('not_found');
+    var sh = ensureTab_(SHEET_FAVORITES);
+    var mine = readRows_(SHEET_FAVORITES).filter(function (r) {
+      return String(r.participant_id) === a.s.pid && String(r.event_id) === id;
+    });
+    var saved;
+    if (mine.length) {
+      for (var i = mine.length - 1; i >= 0; i--) sh.deleteRow(mine[i]._row);
+      saved = false;
+    } else {
+      writeRow_(SHEET_FAVORITES, { participant_id: a.s.pid, event_id: id, created_at: nowIso_() });
+      saved = true;
+    }
+    return json({ ok: true, event_id: id, saved: saved });
+  });
+}
+
+/* -------------------------------------------------------- coach routes */
+function logEventChange_(id, field, oldV, newV, by) {
+  writeRow_(SHEET_EVHISTORY, { timestamp: nowIso_(), event_id: id, field: field,
+    old_value: clean_(oldV, 300), new_value: clean_(newV, 300), by: by });
+}
+
+function cellText_(v, f) {
+  if (v instanceof Date) return f === 'start_time' ? evTime_(v) : (/date|deadline|verified/.test(f) ? cairoDay_(v) : isoOf_(v));
+  v = fromCell_(v);
+  return v === null || v === undefined ? '' : String(v);
+}
+
+/** Insert or update one cleaned event, logging every changed field. Caller holds the lock. */
+function upsertEvent_(ev, by) {
+  var cur = eventRows_().filter(function (r) { return String(r.event_id) === ev.event_id; })[0];
+  var now = nowIso_();
+  if (!cur) {
+    ev.created_at = now; ev.updated_at = now;
+    ev.link_status = ''; ev.link_checked_at = '';
+    writeRow_(SHEET_EVENTS, ev);
+    logEventChange_(ev.event_id, '*', '', 'created', by);
+    return 'created';
+  }
+  var patch = {}, changed = 0;
+  Object.keys(ev).forEach(function (f) {
+    var before = cellText_(cur[f], f);
+    if (isTrue_(cur[f]) && (ev[f] === 'TRUE')) return;
+    if (String(ev[f]) !== before && !(before === 'false' && ev[f] === 'FALSE')) {
+      patch[f] = ev[f]; changed++;
+      logEventChange_(ev.event_id, f, before, ev[f], by);
+    }
+  });
+  if (!changed) return 'unchanged';
+  if (patch.registration_url !== undefined) { patch.link_status = ''; patch.link_checked_at = ''; }
+  patch.updated_at = now;
+  updateRow_(SHEET_EVENTS, cur._row, patch);
+  return 'updated';
+}
+
+function handleCoachEventsList(body) {
+  var a = auth_(body, 'coach');
+  if (a.reply) return a.reply;
+  var todayN = dayNum_(cairoDay_());
+  var favs = {};
+  readRows_(SHEET_FAVORITES).forEach(function (r) { favs[r.event_id] = (favs[r.event_id] || 0) + 1; });
+  var list = eventRows_().filter(function (r) { return r.event_id; }).map(function (r) {
+    var e = publicEvent_(r, todayN);
+    e.archived = isTrue_(r.archived);
+    e.saved_by = favs[e.event_id] || 0;
+    e.stale = !e.last_verified || todayN - dayNum_(e.last_verified) > 30;
+    return e;
+  }).sort(function (x, y) { return x.start_date.localeCompare(y.start_date); });
+  return json({ ok: true, events: list, today: cairoDay_(), last_check: prop_('EVENTS_LAST_CHECK') || '' });
+}
+
+/**
+ * Save one event (body.event) or import many (body.events, or
+ * body.events_json as pasted text). Every event is checked first; nothing is
+ * saved if any of them is wrong.
+ */
+function handleCoachEventsSave(body) {
+  var a = auth_(body, 'coach');
+  if (a.reply) return a.reply;
+  var list = body.events;
+  if (body.events_json !== undefined) {
+    try { list = JSON.parse(String(body.events_json).replace(/^\s*```(?:json)?\s*/i, '').replace(/```\s*$/, '')); }
+    catch (e) { return fail_('invalid_events', { errors: ['Not valid JSON: ' + String(e.message)] }); }
+    if (list && !Array.isArray(list) && Array.isArray(list.events)) list = list.events;
+  }
+  if (body.event) list = [body.event];
+  if (!Array.isArray(list) || !list.length) return fail_('invalid_events', { errors: ['No events given.'] });
+  if (list.length > 300) return fail_('invalid_events', { errors: ['At most 300 events at a time.'] });
+  var cleaned = [], errors = [], seen = {};
+  list.forEach(function (raw, i) {
+    var c = cleanEvent_(raw);
+    if (seen[c.event.event_id]) c.errors.push('event_id: used twice in this import');
+    seen[c.event.event_id] = true;
+    c.errors.forEach(function (m) { errors.push('#' + (i + 1) + ' ' + (c.event.event_id || '?') + ' — ' + m); });
+    cleaned.push(c.event);
+  });
+  if (errors.length) return fail_('invalid_events', { errors: errors.slice(0, 50) });
+  return withLock_(function () {
+    var counts = { created: 0, updated: 0, unchanged: 0 };
+    cleaned.forEach(function (ev) { counts[upsertEvent_(ev, 'coach')]++; });
+    clearEventsCache_();
+    return json({ ok: true, counts: counts });
+  });
+}
+
+/** archive / restore / cancel / postpone / verify one event. */
+function handleCoachEventAction(body) {
+  var a = auth_(body, 'coach');
+  if (a.reply) return a.reply;
+  var id = clean_(body.event_id, 64).toLowerCase();
+  var action = clean_(body.action, 20);
+  var map = { archive: { archived: 'TRUE' }, restore: { archived: 'FALSE' },
+              cancel: { verification_status: 'canceled', registration_status: 'closed' },
+              postpone: { verification_status: 'postponed' },
+              verify: { verification_status: 'verified', last_verified: cairoDay_() } };
+  if (!map[action]) return fail_('invalid');
+  return withLock_(function () {
+    var cur = eventRows_().filter(function (r) { return String(r.event_id) === id; })[0];
+    if (!cur) return fail_('not_found');
+    var patch = map[action];
+    Object.keys(patch).forEach(function (f) { logEventChange_(id, f, cellText_(cur[f], f), patch[f], 'coach:' + action); });
+    patch.updated_at = nowIso_();
+    updateRow_(SHEET_EVENTS, cur._row, patch);
+    clearEventsCache_();
+    return json({ ok: true });
+  });
+}
+
+/* ------------------------------------------------- the daily check */
+/**
+ * Archive events that are over, close registration after its deadline, and
+ * check that each registration link still answers (HTTP status only — the
+ * page itself is never read or stored). Safe to run by hand.
+ */
+function dailyEventMaintenance() {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  var report = { archived: 0, closed: 0, checked: 0, broken: 0 };
+  try {
+    var today = cairoDay_();
+    eventRows_().forEach(function (r) {
+      if (!r.event_id || isTrue_(r.archived)) return;
+      var id = String(r.event_id);
+      var end = evDate_(r.end_date) || evDate_(r.start_date) || '';
+      var patch = {};
+      if (end && end < today) {
+        patch.archived = 'TRUE'; report.archived++;
+      } else {
+        var dl = evDate_(r.registration_deadline);
+        if (dl && dl < today && String(r.registration_status) === 'open') { patch.registration_status = 'closed'; report.closed++; }
+        var url = evUrl_(r.registration_url);
+        if (url && report.checked < 80) {                  // well inside the daily URL-fetch quota
+          var code = 0;
+          try {
+            code = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true,
+                                            headers: { 'User-Agent': '3aashYaWa7sh-link-check' } }).getResponseCode();
+          } catch (err) { code = 0; }
+          report.checked++;
+          /* 403/429: the site refuses robots, not necessarily a dead link. */
+          var st = code >= 200 && code < 400 ? 'ok ' + code
+                 : (code === 403 || code === 429 || code === 405) ? 'blocked ' + code
+                 : 'broken ' + (code || 'no answer');
+          if (st.indexOf('broken') === 0) report.broken++;
+          patch.link_status = st;
+          patch.link_checked_at = nowIso_();
+        }
+      }
+      Object.keys(patch).forEach(function (f) {
+        if (f !== 'link_checked_at' && cellText_(r[f], f) !== String(patch[f])) logEventChange_(id, f, cellText_(r[f], f), patch[f], 'daily check');
+      });
+      if (Object.keys(patch).length) updateRow_(SHEET_EVENTS, r._row, patch);
+    });
+    PropertiesService.getScriptProperties().setProperty('EVENTS_LAST_CHECK', nowIso_() + ' ' + JSON.stringify(report));
+    clearEventsCache_();
+  } finally { lock.releaseLock(); }
+  log_('Daily event check: ' + JSON.stringify(report));
+  return report;
+}
+
+/** Menu: create the once-a-day trigger (only one, however often it is pressed). */
+function installDailyEventCheck() {
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === 'dailyEventMaintenance') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('dailyEventMaintenance').timeBased().everyDays(1).atHour(5).create();
+  var msg = 'Daily event check is on: every day around 5 am. It also ran once now: ' + JSON.stringify(dailyEventMaintenance());
+  try { SpreadsheetApp.getUi().alert(msg); } catch (e) { /* editor */ }
+  return msg;
+}
+
+ROUTES.events_list         = handleEventsList;
+ROUTES.fav_list            = handleFavList;
+ROUTES.fav_toggle          = handleFavToggle;
+ROUTES.coach_events_list   = handleCoachEventsList;
+ROUTES.coach_events_save   = handleCoachEventsSave;
+ROUTES.coach_event_action  = handleCoachEventAction;
