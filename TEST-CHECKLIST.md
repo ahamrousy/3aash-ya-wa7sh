@@ -237,6 +237,22 @@ a fresh intake with a number you own.
 
 ---
 
+## N2. Find Your Challenge (events)
+
+- [ ] Menu → **Turn on the daily event check** shows a report; running it twice leaves one trigger
+- [ ] Coach console → **الفعاليات** → paste `docs/events/<latest>.json` → **احفظ** → "new N"
+- [ ] Paste the same file again → "unchanged N"; change one price → "updated 1", and `EventHistory` has the change
+- [ ] A broken file (e.g. a date `2027-02-30`) is refused and nothing is saved
+- [ ] `events.html` on a phone, Arabic and English, light and dark: no sideways scrolling
+- [ ] Filters: sport, country → city list follows, date, price, level, start time, registration; **Clear All Filters** resets them
+- [ ] Sold-out and closed events only appear when those boxes are ticked
+- [ ] Details: countdown, score explanation, Google / Outlook / .ics calendar, share link opens the same event
+- [ ] **Register** shows only for verified + open events and opens the organiser's site in a new tab
+- [ ] Logged in as a participant: save / unsave an event; logged out: the page asks you to log in
+- [ ] Coach console: cancel an event → its register button disappears from the public page within 5 minutes
+
+---
+
 ## O. Before you announce it
 
 - [ ] Menu → **Delete test participant**, and **Delete a participant…** for any

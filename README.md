@@ -351,6 +351,69 @@ password hashing**.
 
 ---
 
+## Phase 4 — Find Your Challenge (sports events)
+
+`events.html` helps someone who does not train yet find a race or challenge,
+sign up on the organiser's site, and start training for it. It lists events
+in Egypt, the Gulf and nearby that ordinary people can take part in.
+
+**How it works**
+
+* Events live in the `Events` tab, one row each. Every change is written to
+  `EventHistory`; saved events (participants only) go to `Favorites`.
+* Events are researched by hand (or by Claude) and checked against the
+  organiser's own page, then imported in the coach console → **الفعاليات**.
+  Batches are kept in `docs/events/*.json` — public facts only, never
+  participant data.
+* The public page reads them with `events_list`. Unverified and archived
+  events and events that are over are never shown. The register button only
+  appears when an event is `verified`, registration is `open` and the last
+  link check did not find the link broken. It always opens the organiser's
+  site; the site never claims anyone registered.
+* **Commitment Score (0–100)**: beginner access 25, individual entry 20, time
+  to prepare 15, affordability 15, excitement 15, easy to reach from Egypt 10.
+  Advanced events are capped at 35 and professional ones at 20, so a hard
+  event never ranks as a starter event. Popularity plays no part.
+* Prices are shown in the organiser's currency. The dollar filter uses fixed
+  approximate rates (`FX_TO_USD` in `Code.gs`, dated by `FX_DATE`) and the
+  page says so.
+* **Daily check** (sheet menu → *Turn on the daily event check*, once):
+  archives finished events, closes registration after the deadline, and
+  checks each registration link's HTTP status (at most 80 a day). A site
+  that refuses robots shows as "blocked", not broken. *Run the event check
+  now* runs it by hand.
+
+**Event fields** (an import is a JSON list of these): `event_id` (lower-case,
+dashes), `title` and `description` as `{"ar","en"}`, `sport`, `category`
+(running, swimming, cycling, multisport, fitness, obstacle, hiking, team,
+racket, combat, water, winter, adventure, dance, recreational, other),
+`country`, `city`, `venue`, `start_date`, `end_date`, `start_time` (HH:MM,
+local), `timezone`, `registration_deadline`, `price_from`, `price_to`,
+`currency`, `price_note`, `registration_url`, `official_website`,
+`organizer`, `participation_type` (individual/team/both), `event_type`
+(race, challenge, charity, fitness, adventure, festival, tournament),
+`difficulty` (complete_beginner … professional), `beginner_friendly`
+(yes/no/unknown), `minimum_age`, `distances`, `duration`, `equipment`,
+`fitness_requirements` (the last four may be `{"ar","en"}` too),
+`registration_status` (open, soon, closed, sold_out, unknown),
+`verification_status` (verified, partial, unverified, canceled, postponed),
+`source_url`, `last_verified`. Unknown facts stay empty and show as
+"Unknown" — never guess them.
+
+**API** (POST JSON to the same endpoint): `events_list` (public);
+`fav_list`, `fav_toggle {event_id}` (participant session);
+`coach_events_list`, `coach_events_save {events_json | events | event}`,
+`coach_event_action {event_id, action: verify|cancel|postpone|archive|restore}`
+(coach session). An import is all-or-nothing: one bad field and nothing is
+saved, with every error listed.
+
+**Known limits**: no automatic crawling of event sites (most forbid it and
+few have free APIs) — new events come from research runs; no event photos
+(none licensed); no "near me" filter or distance sort, because events have no
+map coordinates yet.
+
+---
+
 ## Privacy and the law
 
 * Data lives in one private Google Sheet owned by the founder. Only the

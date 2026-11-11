@@ -832,7 +832,11 @@ window.I18N = {
     'co.ev.saved_counts'   : 'اتحفظ ✓ — جديد {created} · اتعدّل {updated} · زي ما هو {unchanged}',
     'co.ev.confirm.cancel' : 'تعلّم إن {id} اتلغت؟ زر التسجيل هيختفي.',
     'co.ev.confirm.archive': 'تأرشف {id}؟ هتختفي من الصفحة العامة (وتقدر ترجّعها).',
-    'api.invalid_events'   : 'الفعاليات فيها أخطاء — مفيش حاجة اتحفظت.'
+    'api.invalid_events'   : 'الفعاليات فيها أخطاء — مفيش حاجة اتحفظت.',
+
+    /* --- privacy: saved events --------------------------------------------- */
+    'pp.13.h'   : 'الفعاليات اللي بتحفظها',
+    'pp.13.b'   : 'لو حفظت فعالية من صفحة «لاقي تحدّيك»، بنحفظ إنك حفظتها مربوطة بحسابك، عشان تلاقيها تاني. التسجيل في الفعالية نفسها بيتم على موقع المنظّم، وبيانات التسجيل دي ما بتوصلناش.'
   },
 
   /* ===========================================================================
@@ -1653,6 +1657,10 @@ window.I18N = {
     'co.ev.saved_counts'   : 'Saved ✓ — new {created} · updated {updated} · unchanged {unchanged}',
     'co.ev.confirm.cancel' : 'Mark {id} as canceled? The register button will disappear.',
     'co.ev.confirm.archive': 'Archive {id}? It leaves the public page (you can restore it).',
-    'api.invalid_events'   : 'The events have errors — nothing was saved.'
+    'api.invalid_events'   : 'The events have errors — nothing was saved.',
+
+    /* --- privacy: saved events --------------------------------------------- */
+    'pp.13.h'   : 'Events you save',
+    'pp.13.b'   : 'If you save an event on the Find Your Challenge page, we store that you saved it, linked to your account, so you can find it again. Registering for the event happens on the organiser’s site, and we never receive that registration data.'
   }
 };
