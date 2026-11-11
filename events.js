@@ -105,7 +105,8 @@
       return Object.keys(seen);
     };
     /* Sports and countries come from the events themselves. */
-    fillSelect($('#ev-cat'), CATS.filter(function (c) { return present('category').indexOf(c) !== -1; }), catLabel);
+    var cats = present('category');
+    fillSelect($('#ev-cat'), cats.length ? CATS.filter(function (c) { return cats.indexOf(c) !== -1; }) : CATS, catLabel);
     fillSelect($('#ev-country'), present('country').sort(), function (v) { return v; });
     fillCities();
     fillSelect($('#ev-level'), LEVELS, levelLabel);
@@ -212,6 +213,147 @@
     return n;
   }
 
+
+  /* ---------------------------------------------------------------------------
+     The date calendar — pick a start day, then an end day, like booking a
+     flight. Quick choices sit on top; days with events carry a dot.
+  --------------------------------------------------------------------------- */
+  var PRESETS = ['today', 'tomorrow', 'weekend', '7', '30', '90', '180', '365'];
+  var cal = { start: null, end: null, month: null };           // start/end as day numbers
+
+  function monthStart(n) { var d = new Date(n * 864e5); return Math.round(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1) / 864e5); }
+  function addMonths(n, k) { var d = new Date(n * 864e5); return Math.round(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + k, 1) / 864e5); }
+  function monthsShown() { return window.matchMedia && window.matchMedia('(min-width: 44rem)').matches ? 2 : 1; }
+
+  function eventDays() {
+    var set = {};
+    state.all.forEach(function (e) {
+      var a = dayNum(e.start_date), b = dayNum(e.end_date || e.start_date);
+      for (var d = a; d <= b && d - a < 10; d++) set[d] = (set[d] || 0) + 1;
+    });
+    return set;
+  }
+
+  function paintDateButton() {
+    var b = $('#ev-date-btn'), v = $('#ev-date').value;
+    if (!v) b.textContent = t('ev.cal.any');
+    else if (v !== 'custom') b.textContent = t('ev.date.' + v);
+    else {
+      var f = $('#ev-from').value, to = $('#ev-to').value;
+      b.textContent = f === to || !to ? fmtDate(f, { weekday: 'short' }) : fmtDate(f, { year: undefined }) + ' – ' + fmtDate(to);
+    }
+  }
+
+  function setRange(a, b) {
+    cal.start = a; cal.end = b;
+    $('#ev-date').value = a === null ? '' : 'custom';
+    $('#ev-from').value = a === null ? '' : isoOf(a);
+    $('#ev-to').value = b === null ? (a === null ? '' : isoOf(a)) : isoOf(b);
+  }
+
+  function pickPreset(k) {
+    cal.start = cal.end = null;
+    $('#ev-date').value = k; $('#ev-from').value = ''; $('#ev-to').value = '';
+    var w = dateWindow({ date: k });
+    if (w) { cal.start = w[0]; cal.end = w[1]; }
+    drawCalendar();
+    render();
+  }
+
+  function pickDay(n) {
+    if (cal.start === null || cal.end !== null || $('#ev-date').value !== 'custom' || n < cal.start) {
+      setRange(n, null);                                     // first tap: the start
+    } else {
+      setRange(cal.start, n);                                // second tap: the end
+    }
+    drawCalendar();
+    render();
+    var btn = $('[data-day="' + n + '"]', $('#ev-cal'));
+    if (btn) btn.focus();
+  }
+
+  function drawCalendar() {
+    var today = dayNum(state.today || new Date().toISOString().slice(0, 10));
+    if (cal.month === null) cal.month = monthStart(cal.start !== null ? cal.start : today);
+    var marks = eventDays();
+    var host = $('#ev-cal-months');
+    host.innerHTML = '';
+    var weekdays = A.getLang() === 'ar' ? ['س', 'ح', 'ن', 'ث', 'ر', 'خ', 'ج'] : ['Sa', 'Su', 'Mo', 'Tu', 'We', 'Th', 'Fr'];
+    for (var m = 0; m < monthsShown(); m++) {
+      var first = addMonths(cal.month, m), next = addMonths(first, 1);
+      var title = new Date(first * 864e5).toLocaleDateString(locale(), { month: 'long', year: 'numeric', timeZone: 'UTC' });
+      var grid = el('div', { class: 'evcal__grid', role: 'grid', 'aria-label': title });
+      weekdays.forEach(function (w) { grid.appendChild(el('span', { class: 'evcal__wd', 'aria-hidden': 'true' }, w)); });
+      /* Weeks start on Saturday, as in Egypt and the Gulf. */
+      var lead = (new Date(first * 864e5).getUTCDay() + 1) % 7;
+      for (var i = 0; i < lead; i++) grid.appendChild(el('span', { class: 'evcal__blank' }));
+      for (var d = first; d < next; d++) {
+        var inRange = cal.start !== null && d >= cal.start && d <= (cal.end === null ? cal.start : cal.end);
+        var cls = 'evcal__day' + (d < today ? ' is-past' : '') + (d === today ? ' is-today' : '') +
+                  (inRange ? ' is-in' : '') + (d === cal.start ? ' is-start' : '') +
+                  (d === (cal.end === null ? cal.start : cal.end) ? ' is-end' : '') + (marks[d] ? ' has-ev' : '');
+        var label = fmtDate(isoOf(d), { weekday: 'long' }) + (marks[d] ? ' — ' + t('ev.cal.n', { n: marks[d] }) : '');
+        grid.appendChild(el('button', {
+          type: 'button', class: cls, 'data-day': String(d), disabled: d < today,
+          'aria-pressed': inRange ? 'true' : 'false', 'aria-label': label,
+          on: { click: (function (n) { return function () { pickDay(n); }; })(d) }
+        }, String(new Date(d * 864e5).getUTCDate())));
+      }
+      host.appendChild(el('div', { class: 'evcal__month' }, [el('p', { class: 'evcal__title' }, title), grid]));
+    }
+    $('#ev-cal-prev').disabled = cal.month <= monthStart(today);
+    var hint = cal.start === null ? t('ev.cal.pick_start')
+             : (cal.end === null && $('#ev-date').value === 'custom') ? t('ev.cal.pick_end') : '';
+    $('#ev-cal-hint').textContent = hint;
+    $$('#ev-cal-presets input').forEach(function (i) { i.checked = i.value === $('#ev-date').value; });
+  }
+
+  function buildCalendar() {
+    var host = $('#ev-cal-presets');
+    PRESETS.forEach(function (k) {
+      host.appendChild(el('input', { type: 'radio', name: 'ev-preset', class: 'chip__input', id: 'pr-' + k, value: k,
+                                     on: { change: function () { pickPreset(k); } } }));
+      host.appendChild(el('label', { class: 'chip', for: 'pr-' + k, 'data-i18n': 'ev.date.' + k }, t('ev.date.' + k)));
+    });
+    $('#ev-date-btn').addEventListener('click', function () { toggleCalendar(); });
+    $('#ev-cal-prev').addEventListener('click', function () { cal.month = addMonths(cal.month, -1); drawCalendar(); });
+    $('#ev-cal-next').addEventListener('click', function () { cal.month = addMonths(cal.month, 1); drawCalendar(); });
+    $('#ev-cal-clear').addEventListener('click', function () { setRange(null, null); $('#ev-date').value = ''; drawCalendar(); render(); });
+    $('#ev-cal-done').addEventListener('click', function () { toggleCalendar(false); });
+    $('#ev-cal').addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { toggleCalendar(false); return; }
+      var cur = e.target.getAttribute && e.target.getAttribute('data-day');
+      if (!cur) return;
+      var rtl = document.documentElement.dir === 'rtl';
+      var step = { ArrowRight: rtl ? -1 : 1, ArrowLeft: rtl ? 1 : -1, ArrowDown: 7, ArrowUp: -7 }[e.key];
+      if (!step) return;
+      e.preventDefault();
+      var n = Number(cur) + step;
+      var b = $('[data-day="' + n + '"]', $('#ev-cal'));
+      if (!b) { cal.month = monthStart(n); drawCalendar(); b = $('[data-day="' + n + '"]', $('#ev-cal')); }
+      if (b && !b.disabled) b.focus();
+    });
+    document.addEventListener('click', function (e) {
+      var c = $('#ev-cal');
+      /* A tapped day is redrawn at once, so its old button is no longer on the page: not an outside tap. */
+      if (!e.target.isConnected) return;
+      if (!c.hidden && !c.contains(e.target) && e.target !== $('#ev-date-btn')) toggleCalendar(false);
+    });
+    window.addEventListener('resize', function () { if (!$('#ev-cal').hidden) drawCalendar(); });
+  }
+
+  function toggleCalendar(open) {
+    var c = $('#ev-cal');
+    open = open === undefined ? c.hidden : open;
+    c.hidden = !open;
+    $('#ev-date-btn').setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) {
+      drawCalendar();
+      var focus = $('.evcal__day.is-start', c) || $('.evcal__day.is-today', c) || $('.evcal__day:not([disabled])', c);
+      if (focus) focus.focus();
+    } else $('#ev-date-btn').focus();
+  }
+
   /* ------------------------------------------------------------------ cards */
   function statusBadge(e) {
     if (e.verification_status === 'canceled') return el('span', { class: 'evb evb--closed' }, t('ev.canceled'));
@@ -251,7 +393,7 @@
 
   function render() {
     var f = readFilters();
-    $('#ev-range').hidden = f.date !== 'custom';
+    paintDateButton();
     $('#ev-prange').hidden = f.price !== 'custom';
     var list = sorted(state.all.filter(function (e) { return matches(e, f); }), f.sort);
     var host = $('#ev-list');
@@ -277,6 +419,7 @@
 
   function clearFilters() {
     ['#ev-q', '#ev-from', '#ev-to', '#ev-pmin', '#ev-pmax'].forEach(function (s) { $(s).value = ''; });
+    cal.start = cal.end = null;
     ['#ev-cat', '#ev-country', '#ev-date', '#ev-level', '#ev-price', '#ev-part', '#ev-type'].forEach(function (s) { $(s).value = ''; });
     $('#ev-sort').value = 'date';
     fillCities();
@@ -483,16 +626,21 @@
         var m = /^#e=([a-z0-9\-]+)$/.exec(window.location.hash);
         if (m) openEvent(m[1], true);
       })
-      .catch(function (err) { st.textContent = A.apiMessage(err && err.code); });
+      .catch(function (err) {
+        st.textContent = err && err.code === 'unknown_type' ? t('ev.not_ready') : A.apiMessage(err && err.code);
+        buildFilters();
+      });
   }
 
   function init() {
     A.initPage();
     heroArt();
-    document.addEventListener('ayw:lang', function () { buildFilters(); render(); if (state.open) openEvent(state.open.event_id, true); });
+    buildCalendar();
+    paintDateButton();
+    document.addEventListener('ayw:lang', function () { buildFilters(); render(); if (!$('#ev-cal').hidden) drawCalendar(); if (state.open) openEvent(state.open.event_id, true); });
 
     ['#ev-q'].forEach(function (s) { $(s).addEventListener('input', render); });
-    ['#ev-cat', '#ev-city', '#ev-date', '#ev-from', '#ev-to', '#ev-level', '#ev-price', '#ev-pmin', '#ev-pmax', '#ev-part', '#ev-type', '#ev-sort']
+    ['#ev-cat', '#ev-city', '#ev-level', '#ev-price', '#ev-pmin', '#ev-pmax', '#ev-part', '#ev-type', '#ev-sort']
       .forEach(function (s) { $(s).addEventListener('change', render); });
     $('#ev-country').addEventListener('change', function () { fillCities(); render(); });
     $('#ev-time').addEventListener('change', render);

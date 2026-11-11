@@ -670,8 +670,6 @@ window.I18N = {
     'ev.f.time'               : 'وقت البداية',
     'ev.f.status'             : 'التسجيل',
     'ev.any'                  : 'الكل',
-    'ev.from'                 : 'من',
-    'ev.to'                   : 'لحد',
     'ev.min.usd'              : 'من (دولار)',
     'ev.max.usd'              : 'لحد (دولار)',
     'ev.date.today'           : 'النهارده',
@@ -682,7 +680,6 @@ window.I18N = {
     'ev.date.90'              : '3 شهور',
     'ev.date.180'             : '6 شهور',
     'ev.date.365'             : 'سنة',
-    'ev.date.custom'          : 'اختار تواريخ',
     'ev.price.free'           : 'ببلاش',
     'ev.price.10'             : 'أقل من 10$',
     'ev.price.25'             : '10–25$',
@@ -836,7 +833,20 @@ window.I18N = {
 
     /* --- privacy: saved events --------------------------------------------- */
     'pp.13.h'   : 'الفعاليات اللي بتحفظها',
-    'pp.13.b'   : 'لو حفظت فعالية من صفحة «لاقي تحدّيك»، بنحفظ إنك حفظتها مربوطة بحسابك، عشان تلاقيها تاني. التسجيل في الفعالية نفسها بيتم على موقع المنظّم، وبيانات التسجيل دي ما بتوصلناش.'
+    'pp.13.b'   : 'لو حفظت فعالية من صفحة «لاقي تحدّيك»، بنحفظ إنك حفظتها مربوطة بحسابك، عشان تلاقيها تاني. التسجيل في الفعالية نفسها بيتم على موقع المنظّم، وبيانات التسجيل دي ما بتوصلناش.',
+
+    /* --- find your challenge: calendar ------------------------------------- */
+    'ev.cal.h'         : 'اختار التواريخ',
+    'ev.cal.any'       : 'أي تاريخ — اضغط واختار',
+    'ev.cal.prev'      : 'الشهر اللي فات',
+    'ev.cal.next'      : 'الشهر الجاي',
+    'ev.cal.pick_start': 'اختار يوم البداية',
+    'ev.cal.pick_end'  : 'دلوقتي اختار يوم النهاية (أو اضغط تمام ليوم واحد)',
+    'ev.cal.legend'    : 'فيه فعاليات في اليوم ده',
+    'ev.cal.n'         : '{n} فعالية',
+    'ev.cal.clear'     : 'امسح التاريخ',
+    'ev.cal.done'      : 'تمام',
+    'ev.not_ready'     : 'الفعاليات لسه ما اتفعّلتش على السيرفر — صاحب الموقع محتاج يحدّث الـ Apps Script.'
   },
 
   /* ===========================================================================
@@ -1495,8 +1505,6 @@ window.I18N = {
     'ev.f.time'               : 'Start time',
     'ev.f.status'             : 'Registration',
     'ev.any'                  : 'Any',
-    'ev.from'                 : 'From',
-    'ev.to'                   : 'To',
     'ev.min.usd'              : 'Min (USD)',
     'ev.max.usd'              : 'Max (USD)',
     'ev.date.today'           : 'Today',
@@ -1507,7 +1515,6 @@ window.I18N = {
     'ev.date.90'              : 'Next 3 months',
     'ev.date.180'             : 'Next 6 months',
     'ev.date.365'             : 'Next 12 months',
-    'ev.date.custom'          : 'Custom dates',
     'ev.price.free'           : 'Free',
     'ev.price.10'             : 'Under $10',
     'ev.price.25'             : '$10–$25',
@@ -1661,6 +1668,19 @@ window.I18N = {
 
     /* --- privacy: saved events --------------------------------------------- */
     'pp.13.h'   : 'Events you save',
-    'pp.13.b'   : 'If you save an event on the Find Your Challenge page, we store that you saved it, linked to your account, so you can find it again. Registering for the event happens on the organiser’s site, and we never receive that registration data.'
+    'pp.13.b'   : 'If you save an event on the Find Your Challenge page, we store that you saved it, linked to your account, so you can find it again. Registering for the event happens on the organiser’s site, and we never receive that registration data.',
+
+    /* --- find your challenge: calendar ------------------------------------- */
+    'ev.cal.h'         : 'Choose dates',
+    'ev.cal.any'       : 'Any date — tap to choose',
+    'ev.cal.prev'      : 'Previous month',
+    'ev.cal.next'      : 'Next month',
+    'ev.cal.pick_start': 'Pick the first day',
+    'ev.cal.pick_end'  : 'Now pick the last day (or press Done for one day)',
+    'ev.cal.legend'    : 'Events on this day',
+    'ev.cal.n'         : '{n} events',
+    'ev.cal.clear'     : 'Clear dates',
+    'ev.cal.done'      : 'Done',
+    'ev.not_ready'     : 'Events are not switched on on the server yet — the site owner needs to update the Apps Script.'
   }
 };

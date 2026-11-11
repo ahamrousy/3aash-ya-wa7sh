@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="styles.css?v=8">
+<link rel="stylesheet" href="styles.css?v=9">
 <script>try{if(matchMedia('(prefers-reduced-motion: no-preference)').matches)document.documentElement.classList.add('motion')}catch(e){}</script>
 <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -87,23 +87,29 @@
         <label class="evf"><span data-i18n="ev.f.sport"></span><select class="input" id="ev-cat"></select></label>
         <label class="evf"><span data-i18n="ev.f.country"></span><select class="input" id="ev-country"></select></label>
         <label class="evf"><span data-i18n="ev.f.city"></span><select class="input" id="ev-city"></select></label>
-        <label class="evf"><span data-i18n="ev.f.date"></span>
-          <select class="input" id="ev-date">
-            <option value="" data-i18n="ev.any"></option>
-            <option value="today" data-i18n="ev.date.today"></option>
-            <option value="tomorrow" data-i18n="ev.date.tomorrow"></option>
-            <option value="weekend" data-i18n="ev.date.weekend"></option>
-            <option value="7" data-i18n="ev.date.7"></option>
-            <option value="30" data-i18n="ev.date.30"></option>
-            <option value="90" data-i18n="ev.date.90"></option>
-            <option value="180" data-i18n="ev.date.180"></option>
-            <option value="365" data-i18n="ev.date.365"></option>
-            <option value="custom" data-i18n="ev.date.custom"></option>
-          </select>
-        </label>
-        <div class="evf evf--range" id="ev-range" hidden>
-          <label><span data-i18n="ev.from"></span><input class="input" type="date" id="ev-from"></label>
-          <label><span data-i18n="ev.to"></span><input class="input" type="date" id="ev-to"></label>
+        <div class="evf evf--date">
+          <span id="ev-date-lbl" data-i18n="ev.f.date"></span>
+          <button type="button" class="input evdate__btn" id="ev-date-btn" aria-haspopup="dialog"
+                  aria-expanded="false" aria-controls="ev-cal" aria-describedby="ev-date-lbl"></button>
+          <!-- The filter reads these; the calendar below fills them in. -->
+          <input type="hidden" id="ev-date"><input type="hidden" id="ev-from"><input type="hidden" id="ev-to">
+        </div>
+        <div class="evcal" id="ev-cal" role="dialog" aria-modal="false" aria-labelledby="ev-cal-h" hidden>
+          <p class="sr-only" id="ev-cal-h" data-i18n="ev.cal.h"></p>
+          <div class="chips evcal__presets" id="ev-cal-presets"></div>
+          <div class="evcal__nav">
+            <button type="button" class="evcal__arrow" id="ev-cal-prev" data-i18n-aria="ev.cal.prev">‹</button>
+            <p class="evcal__hint" id="ev-cal-hint" aria-live="polite"></p>
+            <button type="button" class="evcal__arrow" id="ev-cal-next" data-i18n-aria="ev.cal.next">›</button>
+          </div>
+          <div class="evcal__months" id="ev-cal-months"></div>
+          <div class="evcal__foot">
+            <span class="evcal__legend"><span class="evcal__dot" aria-hidden="true"></span> <span data-i18n="ev.cal.legend"></span></span>
+            <span class="c-row">
+              <button type="button" class="btn btn--ghost btn--sm" id="ev-cal-clear" data-i18n="ev.cal.clear"></button>
+              <button type="button" class="btn btn--primary btn--sm" id="ev-cal-done" data-i18n="ev.cal.done"></button>
+            </span>
+          </div>
         </div>
         <label class="evf"><span data-i18n="ev.f.level"></span><select class="input" id="ev-level"></select></label>
         <label class="evf"><span data-i18n="ev.f.price"></span>
@@ -209,9 +215,9 @@
   </div>
 </footer>
 
-<script src="config.js?v=8"></script>
-<script src="i18n.js?v=8"></script>
-<script src="common.js?v=8"></script>
-<script src="events.js?v=8"></script>
+<script src="config.js?v=9"></script>
+<script src="i18n.js?v=9"></script>
+<script src="common.js?v=9"></script>
+<script src="events.js?v=9"></script>
 </body>
 </html>

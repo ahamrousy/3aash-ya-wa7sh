@@ -1011,10 +1011,6 @@ html[dir="rtl"] .trend__svg { transform: scaleX(-1); }      /* time runs right-t
 .evart__i--1 { background: var(--sun); color: var(--sun-ink); }
 .evart__i--2 { background: rgba(255,255,255,.22); }
 @media (max-width: 47.99rem) { .evhero__art { grid-template-columns: repeat(5, 1fr); max-width: none; gap: var(--s2); } .evart__i { border-radius: 14px; } .evart__i:nth-child(n+6) { display: none; } }
-@media (prefers-reduced-motion: no-preference) {
-  .evart__i { animation: ev-pop .5s cubic-bezier(.2,.9,.3,1.3) both; animation-delay: calc(var(--i) * 70ms); }
-  @keyframes ev-pop { from { opacity: 0; transform: scale(.6) rotate(-8deg); } to { opacity: 1; transform: none; } }
-}
 
 .evsec { margin-block: var(--s6); }
 .evsec__h { margin-block-end: var(--s1); }
@@ -1096,6 +1092,44 @@ html[dir="rtl"] .trend__svg { transform: scaleX(-1); }      /* time runs right-t
 .evd__actions { display: grid; gap: var(--s3); }
 .evd__actions .btn--lg { width: 100%; }
 .evd__row { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
+
+
+/* The date calendar */
+.evf--date { position: relative; }
+.evdate__btn { text-align: start; cursor: pointer; font-weight: 700; color: var(--ink); }
+.evdate__btn::after { content: "📅"; float: inline-end; }
+.evcal {
+  grid-column: 1 / -1; background: var(--surface); border: 2px solid var(--accent); border-radius: var(--radius);
+  padding: var(--s3) var(--s4); box-shadow: 6px 6px 0 var(--sun); display: grid; gap: var(--s3);
+}
+.evcal__presets .chip { min-height: 36px; font-size: .82rem; }
+.evcal__nav { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
+.evcal__hint { margin: 0; font-weight: 700; color: var(--accent-dark); font-size: .9rem; text-align: center; }
+.evcal__arrow { width: var(--tap); height: var(--tap); border-radius: 50%; border: 1px solid var(--line-2);
+  background: var(--surface); color: var(--ink); font-size: 1.5rem; cursor: pointer; line-height: 1; }
+.evcal__arrow[disabled] { opacity: .35; cursor: default; }
+html[dir="rtl"] .evcal__arrow { transform: scaleX(-1); }
+.evcal__months { display: grid; gap: var(--s5); }
+@media (min-width: 44rem) { .evcal__months { grid-template-columns: 1fr 1fr; } }
+.evcal__title { margin: 0 0 var(--s2); font-weight: 800; text-align: center; }
+.evcal__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.evcal__wd { text-align: center; font-size: .75rem; font-weight: 700; color: var(--muted); padding-block: 4px; }
+.evcal__day {
+  position: relative; aspect-ratio: 1; min-height: 38px; border: 0; border-radius: 10px; background: none;
+  font: inherit; font-size: .9rem; font-weight: 600; color: var(--ink); cursor: pointer;
+}
+.evcal__day:hover:not([disabled]) { background: var(--accent-soft); }
+.evcal__day.is-past { color: var(--line-2); cursor: default; }
+.evcal__day.is-today { box-shadow: inset 0 0 0 2px var(--accent); }
+.evcal__day.is-in { background: var(--accent-soft); border-radius: 0; }
+.evcal__day.is-start, .evcal__day.is-end { background: var(--accent); color: var(--accent-ink); border-radius: 10px; }
+.evcal__day.has-ev::after, .evcal__dot {
+  content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--sun);
+  box-shadow: 0 0 0 1.5px var(--sun-ink);
+}
+.evcal__day.has-ev::after { position: absolute; bottom: 4px; left: 50%; margin-left: -3px; }
+.evcal__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2); }
+.evcal__legend { font-size: .82rem; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
 
 /* Coach console: events */
 .c-ev-row { display: grid; gap: var(--s1); padding-block: var(--s2); border-block-end: 1px solid var(--line); font-size: .88rem; }
