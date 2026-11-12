@@ -1139,6 +1139,45 @@ html[dir="rtl"] .evcal__arrow { transform: scaleX(-1); }
 .c-ev-actions { display: flex; flex-wrap: wrap; gap: 4px; }
 .c-ev-actions .btn { min-height: 32px; padding: 2px var(--s3); font-size: .78rem; }
 
+
+/* ===========================================================================
+   19. HOME EXTRAS — what you get, FAQ, our promise, floating buttons
+   ======================================================================== */
+.pillars { margin-block: var(--s7) var(--s6); }
+.pillars__h { margin-block-end: var(--s4); }
+.pillars__grid { display: grid; gap: var(--s4); }
+@media (min-width: 34rem) { .pillars__grid { grid-template-columns: 1fr 1fr; } }
+.pillar { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: var(--s5); padding-inline-start: calc(var(--s5) + 44px); }
+.pillar__n { position: absolute; inset-inline-start: var(--s4); inset-block-start: var(--s5); width: 32px; height: 32px;
+  display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); border-radius: 10px; font-weight: 800; }
+.pillar h3 { margin-block-end: var(--s1); }
+.pillar p { margin: 0; color: var(--ink-soft); font-size: .95rem; }
+
+.faq { margin-block: var(--s7) var(--s5); }
+.faq__h { margin-block-end: var(--s4); }
+.faq__item { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); margin-block-end: var(--s2); }
+.faq__item summary { cursor: pointer; list-style: none; font-weight: 800; padding: var(--s3) var(--s4); min-height: var(--tap);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+.faq__item summary::-webkit-details-marker { display: none; }
+.faq__item summary::after { content: "+"; font-size: 1.4rem; color: var(--accent-dark); flex: 0 0 auto; }
+.faq__item[open] summary::after { content: "−"; }
+.faq__item[open] { border-color: var(--accent); }
+.faq__item p { margin: 0; padding: 0 var(--s4) var(--s4); color: var(--ink-soft); }
+
+.promise { background: var(--accent-soft); border-inline-start: 5px solid var(--accent); border-radius: var(--radius);
+  padding: var(--s5); margin-block: var(--s5); }
+.promise h2 { font-size: 1.25rem; }
+.promise ul { margin: 0; padding-inline-start: var(--s5); display: grid; gap: var(--s2); }
+
+.fab { position: fixed; z-index: 30; inset-block-end: calc(var(--s4) + env(safe-area-inset-bottom)); width: 54px; height: 54px;
+  border-radius: 50%; display: grid; place-items: center; border: 0; cursor: pointer; box-shadow: var(--shadow); text-decoration: none; }
+.fab--wa { inset-inline-end: var(--s4); background: #25D366; color: #fff; }
+.fab--wa svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
+.fab--top { inset-inline-start: var(--s4); width: 44px; height: 44px; background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line-2); font-size: 1.2rem; font-weight: 800; }
+@media print { .fab { display: none; } }
+
 /* The celebration burst — pieces are added by app.js only when motion is allowed. */
 .burst { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
 .burst__bit {

@@ -450,6 +450,31 @@ window.AYW = (function () {
     $$('[data-wa-coach]', root).forEach(function (a) { a.href = waUrl(CFG.contactWhatsapp, text || ''); });
   }
 
+  /* ---------------------------------------------------------------------------
+     Floating WhatsApp button and back-to-top, on every public page.
+     A page opts out with <body data-no-float> (the coach console does).
+  --------------------------------------------------------------------------- */
+  function initFloating() {
+    if (!document.body || document.body.hasAttribute('data-no-float') || $('.fab')) return;
+    var wa = el('a', { class: 'fab fab--wa', target: '_blank', rel: 'noopener noreferrer' });
+    wa.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3z"/><path d="M8.5 8.5c.3 2.6 2.4 5 5 6l1.2-1.2 1.8.9-.4 1.6c-3.5.3-7.8-3.6-8-7.6l1.6-.5.8 1.8z"/></svg>';
+    var top = el('button', { type: 'button', class: 'fab fab--top', hidden: true }, '↑');
+    top.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: motionOK() ? 'smooth' : 'auto' }); });
+    function paint() {
+      wa.href = waUrl(CFG.contactWhatsapp, t('fab.wa.msg'));
+      wa.setAttribute('aria-label', t('fab.wa'));
+      wa.setAttribute('title', t('fab.wa'));
+      top.setAttribute('aria-label', t('fab.top'));
+    }
+    paint();
+    document.addEventListener('ayw:lang', paint);
+    window.addEventListener('scroll', function () { top.hidden = window.scrollY < 600; }, { passive: true });
+    document.body.appendChild(top);
+    document.body.appendChild(wa);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initFloating);
+  else setTimeout(initFloating, 0);
+
   /** The start-up every simple page shares: language, config text, motion. */
   function initPage() {
     initLang();
