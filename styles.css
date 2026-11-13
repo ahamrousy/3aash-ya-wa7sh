@@ -1131,6 +1131,12 @@ html[dir="rtl"] .evcal__arrow { transform: scaleX(-1); }
 .evcal__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2); }
 .evcal__legend { font-size: .82rem; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
 
+.evsuggest { display: grid; gap: var(--s3); align-items: center; margin-block: var(--s6);
+  background: var(--surface); border: 2px dashed var(--accent); border-radius: var(--radius); padding: var(--s5); }
+@media (min-width: 40rem) { .evsuggest { grid-template-columns: 1fr auto; } }
+.evsuggest h3 { margin-block-end: var(--s1); }
+.evsuggest p { margin: 0; color: var(--ink-soft); }
+
 /* Coach console: events */
 .c-ev-row { display: grid; gap: var(--s1); padding-block: var(--s2); border-block-end: 1px solid var(--line); font-size: .88rem; }
 @media (min-width: 52rem) { .c-ev-row { grid-template-columns: 1.6fr 1fr auto; align-items: center; } }

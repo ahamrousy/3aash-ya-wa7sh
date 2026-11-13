@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="styles.css?v=10">
+<link rel="stylesheet" href="styles.css?v=11">
 <script>try{if(matchMedia('(prefers-reduced-motion: no-preference)').matches)document.documentElement.classList.add('motion')}catch(e){}</script>
 <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -158,8 +158,19 @@
     <div id="ev-empty" class="wait" hidden>
       <h3 data-i18n="ev.empty.h"></h3>
       <p data-i18n="ev.empty.p"></p>
-      <p><button type="button" class="btn btn--primary" id="ev-empty-clear" data-i18n="ev.clear"></button></p>
+      <p class="c-row" style="justify-content:center">
+        <button type="button" class="btn btn--primary" id="ev-empty-clear" data-i18n="ev.clear"></button>
+        <a class="btn btn--ghost" data-ev-suggest target="_blank" rel="noopener noreferrer" data-i18n="ev.suggest.btn"></a>
+      </p>
     </div>
+
+    <aside class="evsuggest reveal">
+      <div>
+        <h3 data-i18n="ev.suggest.h"></h3>
+        <p data-i18n="ev.suggest.p"></p>
+      </div>
+      <a class="btn btn--primary" data-ev-suggest target="_blank" rel="noopener noreferrer" data-i18n="ev.suggest.btn"></a>
+    </aside>
   </section>
 
   <aside class="evnote">
@@ -215,9 +226,9 @@
   </div>
 </footer>
 
-<script src="config.js?v=10"></script>
-<script src="i18n.js?v=10"></script>
-<script src="common.js?v=10"></script>
-<script src="events.js?v=10"></script>
+<script src="config.js?v=11"></script>
+<script src="i18n.js?v=11"></script>
+<script src="common.js?v=11"></script>
+<script src="events.js?v=11"></script>
 </body>
 </html>

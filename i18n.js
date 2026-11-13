@@ -786,10 +786,10 @@ window.I18N = {
     'ev.cat.fitness'          : 'لياقة وقوة',
     'ev.cat.obstacle'         : 'سباقات موانع',
     'ev.cat.hiking'           : 'هايكنج وتريكنج',
-    'ev.cat.team'             : 'رياضات جماعية',
-    'ev.cat.racket'           : 'رياضات المضرب',
+    'ev.cat.team'             : 'رياضات جماعية (كورة، يد، سلة، طايرة…)',
+    'ev.cat.racket'           : 'رياضات المضرب (تنس، بادل، اسكواش…)',
     'ev.cat.combat'           : 'رياضات قتالية',
-    'ev.cat.water'            : 'رياضات مائية',
+    'ev.cat.water'            : 'رياضات مائية (تجديف، كاياك، شراع…)',
     'ev.cat.winter'           : 'رياضات شتوية',
     'ev.cat.adventure'        : 'مغامرات',
     'ev.cat.dance'            : 'رقص',
@@ -887,7 +887,16 @@ window.I18N = {
     'pr.5'      : 'أهداف واقعية بنتفق عليها سوا، ونعدّل البرنامج على حسب تقدمك.',
     'fab.wa'    : 'كلّمنا على الواتساب',
     'fab.wa.msg': 'السلام عليكم، عندي سؤال عن عاش يا وحش',
-    'fab.top'   : 'لفوق'
+    'fab.top'   : 'لفوق',
+
+    /* --- find your challenge: more sports, suggest ------------------------- */
+    'ev.cat.equestrian': 'فروسية',
+    'ev.cat.golf'      : 'جولف',
+    'ev.cat.motorsport': 'سباقات سيارات وكارتينج',
+    'ev.suggest.h'     : 'تعرف بطولة أو سباق مش موجود هنا؟',
+    'ev.suggest.p'     : 'تنس، كورة، يد، فروسية، تجديف، أو أي رياضة — ابعتلنا اسمها ولينكها، وبعد ما نتأكد منها هنضيفها عشان الكل يشارك.',
+    'ev.suggest.btn'   : 'ابعتهالنا على الواتساب',
+    'ev.suggest.msg'   : 'السلام عليكم، عايز أقترح فعالية رياضية لصفحة «لاقي تحدّيك»:\nالاسم:\nالرياضة:\nالمكان والتاريخ:\nلينك التسجيل:'
   },
 
   /* ===========================================================================
@@ -1662,10 +1671,10 @@ window.I18N = {
     'ev.cat.fitness'          : 'Fitness & strength',
     'ev.cat.obstacle'         : 'Obstacle races',
     'ev.cat.hiking'           : 'Hiking & trekking',
-    'ev.cat.team'             : 'Team sports',
-    'ev.cat.racket'           : 'Racket sports',
+    'ev.cat.team'             : 'Team sports (football, handball, basketball, volleyball…)',
+    'ev.cat.racket'           : 'Racket sports (tennis, padel, squash…)',
     'ev.cat.combat'           : 'Combat sports',
-    'ev.cat.water'            : 'Water sports',
+    'ev.cat.water'            : 'Water sports (rowing, kayak, sailing…)',
     'ev.cat.winter'           : 'Winter sports',
     'ev.cat.adventure'        : 'Adventure sports',
     'ev.cat.dance'            : 'Dance',
@@ -1763,6 +1772,15 @@ window.I18N = {
     'pr.5'      : 'Realistic goals we agree together, and a program that adapts to your progress.',
     'fab.wa'    : 'Chat with us on WhatsApp',
     'fab.wa.msg': 'Hi, I have a question about 3aash Ya Wa7sh',
-    'fab.top'   : 'Back to top'
+    'fab.top'   : 'Back to top',
+
+    /* --- find your challenge: more sports, suggest ------------------------- */
+    'ev.cat.equestrian': 'Equestrian',
+    'ev.cat.golf'      : 'Golf',
+    'ev.cat.motorsport': 'Motorsport & karting',
+    'ev.suggest.h'     : 'Know a tournament or race that is not here?',
+    'ev.suggest.p'     : 'Tennis, football, handball, horse riding, rowing or any sport — send us its name and link, and once we have checked it we will add it for everyone.',
+    'ev.suggest.btn'   : 'Send it on WhatsApp',
+    'ev.suggest.msg'   : 'Hi, I would like to suggest an event for Find Your Challenge:\nName:\nSport:\nPlace and date:\nRegistration link:'
   }
 };

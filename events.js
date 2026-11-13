@@ -18,7 +18,7 @@
   var state = { all: [], fx: null, today: '', favs: {}, open: null, loggedIn: false };
 
   var CATS = ['running', 'swimming', 'cycling', 'multisport', 'fitness', 'obstacle', 'hiking', 'team', 'racket',
-              'combat', 'water', 'winter', 'adventure', 'dance', 'recreational', 'other'];
+              'combat', 'water', 'equestrian', 'golf', 'winter', 'adventure', 'dance', 'motorsport', 'recreational', 'other'];
   var LEVELS = ['complete_beginner', 'beginner', 'amateur', 'intermediate', 'advanced', 'professional'];
   var TYPES = ['race', 'challenge', 'charity', 'fitness', 'adventure', 'festival', 'tournament'];
   var TIMES = ['early', 'morning', 'afternoon', 'evening', 'night'];
@@ -38,6 +38,9 @@
     racket: '<ellipse cx="10" cy="9" rx="5" ry="6"/><path d="M13.5 13.5L20 20"/><circle cx="18" cy="6" r="1.5"/>',
     combat: '<path d="M7 11V7a2 2 0 0 1 4 0v4"/><path d="M11 9a2 2 0 0 1 4 0v3"/><path d="M15 10a2 2 0 0 1 3 1v3a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-1-3 2-1 2 2"/>',
     water: '<path d="M3 15c2 0 2 1.5 4.5 1.5S10 15 12 15s2 1.5 4.5 1.5S19 15 21 15"/><path d="M4 12l8-8 8 8"/><path d="M12 4v11"/>',
+    equestrian: '<path d="M6 20l2-6-3-3 2-5 4-2 5 3-1 3h3v3l-4 1-2 6"/><path d="M11 4l-1-2"/>',
+    golf: '<path d="M8 21h8"/><path d="M12 21V3l7 3-7 3"/><circle cx="16" cy="17" r="1.5"/>',
+    motorsport: '<circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17h12l-2-6H8z"/><path d="M10 11l1-3h3"/>',
     winter: '<path d="M12 3v18M4 7.5l16 9M20 7.5l-16 9"/>',
     adventure: '<path d="M12 3l3 6 6 1-4.5 4 1 6-5.5-3-5.5 3 1-6L3 10l6-1z"/>',
     dance: '<circle cx="12" cy="4.5" r="1.6"/><path d="M12 7v6l-4 7M12 13l4 7"/><path d="M6 10l6-2 6 3"/>',
@@ -105,8 +108,9 @@
       return Object.keys(seen);
     };
     /* Sports and countries come from the events themselves. */
-    var cats = present('category');
-    fillSelect($('#ev-cat'), cats.length ? CATS.filter(function (c) { return cats.indexOf(c) !== -1; }) : CATS, catLabel);
+    var perCat = {};
+    state.all.forEach(function (e) { perCat[e.category] = (perCat[e.category] || 0) + 1; });
+    fillSelect($('#ev-cat'), CATS, function (c) { return catLabel(c) + ' (' + (perCat[c] || 0) + ')'; });
     fillSelect($('#ev-country'), present('country').sort(), function (v) { return v; });
     fillCities();
     fillSelect($('#ev-level'), LEVELS, levelLabel);
@@ -124,6 +128,7 @@
       });
     }
     $('#ev-fxnote').textContent = state.fx ? t('ev.fx', { date: state.fx.date }) : '';
+    $$('[data-ev-suggest]').forEach(function (a) { a.href = A.waUrl(A.cfg.contactWhatsapp, t('ev.suggest.msg')); });
   }
 
   function fillCities() {

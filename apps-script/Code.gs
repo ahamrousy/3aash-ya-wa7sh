@@ -2651,6 +2651,7 @@ TABS.Favorites = {
 /* Allowed values. The sport itself is free text, so a new sport needs no code. */
 var EV = {
   CATEGORIES:   ['running', 'swimming', 'cycling', 'multisport', 'fitness', 'obstacle', 'hiking', 'team',
+                 'equestrian', 'golf', 'motorsport',
                  'racket', 'combat', 'water', 'winter', 'adventure', 'dance', 'recreational', 'other'],
   PARTICIPATION:['individual', 'team', 'both'],
   TYPES:        ['race', 'challenge', 'charity', 'fitness', 'adventure', 'festival', 'tournament'],
