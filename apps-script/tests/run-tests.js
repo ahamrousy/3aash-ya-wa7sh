@@ -821,5 +821,40 @@ section('24. Events: favourites and the daily check');
     S.ScriptApp.getProjectTriggers().filter((t) => t.getHandlerFunction() === 'dailyEventMaintenance').length === 1);
 }
 
+section('25. Events: weekly batches picked up from GitHub');
+{
+  const FEED = 'https://raw.githubusercontent.com/ahamrousy/3aash-ya-wa7sh/main/docs/events/';
+  const S0 = load();
+  const past = S0.isoOfDay_(S0.dayNum_(S0.cairoDay_()) - 3);
+  const bodies = {};
+  bodies[FEED + 'manifest.json'] = JSON.stringify({ files: ['a.json', 'bad.json', 'missing.json', '../x.json'] });
+  bodies[FEED + 'a.json'] = JSON.stringify([ev('feed-one'), ev('feed-two'), ev('feed-old', { start_date: past })]);
+  bodies[FEED + 'bad.json'] = JSON.stringify([ev('feed-good'), ev('feed-bad', { category: 'nonsense' })]);
+  bodies[FEED + 'missing.json'] = null;
+  const S = load({ props: PROPS, urlBodies: bodies });
+  const ids = () => table(S, 'Events').map((e) => e.event_id).sort().join();
+  const r1 = S.dailyEventMaintenance().feed;
+  check('the daily check imports new batch files listed in the manifest', ids() === 'feed-one,feed-two' && r1.created === 2, r1);
+  check('…leaves out events that are already over', r1.skipped_past === 1);
+  check('…skips a whole file when one event in it is wrong', !/feed-good/.test(ids()) && r1.errors.some((m) => /bad\.json/.test(m)));
+  check('…reports a missing file and ignores unsafe names', r1.errors.some((m) => /missing\.json: HTTP 404/.test(m)) &&
+    !r1.errors.some((m) => /\.\.\//.test(m)));
+  const cs = coach(S);
+  post(S, { type: 'coach_event_action', session: cs, event_id: 'feed-one', action: 'cancel' });
+  const r2 = S.importEventsFeed_();
+  check('an unchanged file is not imported again (coach edits survive)', r2.files === 0 &&
+    table(S, 'Events').find((e) => e.event_id === 'feed-one').verification_status === 'canceled', r2);
+  bodies[FEED + 'a.json'] = JSON.stringify([ev('feed-one'), ev('feed-two', { city: 'Giza' }), ev('feed-three')]);
+  const r3 = S.importEventsFeed_();
+  check('a changed file is imported again', r3.files === 1 && r3.created === 1 && /feed-three/.test(ids()) &&
+    table(S, 'Events').find((e) => e.event_id === 'feed-two').city === 'Giza', r3);
+  S.__state.props.EVENTS_FEED_URL = 'off';
+  check('EVENTS_FEED_URL=off turns it off', S.importEventsFeed_().off === true);
+  S.__state.props.EVENTS_FEED_URL = 'http://insecure.example/';
+  check('only https feeds are allowed', /https/.test(S.importEventsFeed_().error || ''));
+  const S2 = load({ props: PROPS });
+  check('a feed that cannot be read never breaks the daily check', typeof S2.dailyEventMaintenance().archived === 'number');
+}
+
 console.log('\n================  ' + pass + ' passed, ' + fail + ' failed  ================\n');
 process.exit(fail ? 1 : 0);

@@ -160,10 +160,17 @@ function load(opts) {
       getUi: () => ({ createMenu: () => ({ addItem() { return this; }, addSeparator() { return this; }, addToUi() {} }) })
     },
     /* Link checks: opts.urlCodes maps a URL to the status it "answers" (default 200). */
+    /* opts.urlBodies maps a URL (query string ignored) to the text it serves. */
     UrlFetchApp: { fetch: (url) => {
+      const bare = String(url).split('?')[0];
+      if (opts.urlBodies && Object.prototype.hasOwnProperty.call(opts.urlBodies, bare)) {
+        const b = opts.urlBodies[bare];
+        return b === null ? { getResponseCode: () => 404, getContentText: () => 'not found' }
+                          : { getResponseCode: () => 200, getContentText: () => b };
+      }
       const code = opts.urlCodes && Object.prototype.hasOwnProperty.call(opts.urlCodes, url) ? opts.urlCodes[url] : 200;
       if (code === 'throw') throw new Error('DNS error');
-      return { getResponseCode: () => code };
+      return { getResponseCode: () => code, getContentText: () => '' };
     } },
     ScriptApp: (() => {
       const triggers = [];

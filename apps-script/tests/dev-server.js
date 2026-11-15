@@ -59,7 +59,7 @@ if (!process.env.NO_PLAN) {
 try {
   const dir = path.join(ROOT, 'docs', 'events');
   const cs = S.createSession_(S.COACH_PID, 'coach', 'full').token;
-  fs.readdirSync(dir).filter((f) => f.endsWith('.json')).sort().forEach((f) => {
+  fs.readdirSync(dir).filter((f) => f.endsWith('.json') && f !== 'manifest.json').sort().forEach((f) => {
     const r = S.doPost({ postData: { contents: JSON.stringify({ type: 'coach_events_save', session: cs,
       events_json: fs.readFileSync(path.join(dir, f), 'utf8') }) } }).getContent();
     console.log('events from ' + f + ': ' + r);

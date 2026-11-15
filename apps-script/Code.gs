@@ -774,6 +774,7 @@ function onOpen() {
     .addSeparator()
     .addItem('Turn on the daily event check', 'installDailyEventCheck')
     .addItem('Run the event check now', 'dailyEventMaintenance')
+    .addItem('Import new events from GitHub now', 'runEventsFeedNow')
     .addToUi();
 }
 
@@ -2998,9 +2999,11 @@ function handleCoachEventAction(body) {
  * page itself is never read or stored). Safe to run by hand.
  */
 function dailyEventMaintenance() {
+  var feed;
+  try { feed = importEventsFeed_(); } catch (e) { feed = { error: String(e.message || e) }; }
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
-  var report = { archived: 0, closed: 0, checked: 0, broken: 0 };
+  var report = { archived: 0, closed: 0, checked: 0, broken: 0, feed: feed };
   try {
     var today = cairoDay_();
     eventRows_().forEach(function (r) {
@@ -3040,6 +3043,81 @@ function dailyEventMaintenance() {
   } finally { lock.releaseLock(); }
   log_('Daily event check: ' + JSON.stringify(report));
   return report;
+}
+
+/* ------------------------------------------ new events from GitHub */
+/**
+ * The weekly research run commits batch files to the PUBLIC repo under
+ * docs/events/ and lists them in docs/events/manifest.json:
+ *     { "files": ["events-2026-11-first-batch.json", ...] }
+ * Each day this reads the manifest and imports any listed file that is new
+ * or has changed since it was last imported (remembered by its SHA-256 in
+ * the EVENTS_FEED_DONE property), so the coach's own edits are not undone
+ * every day. Files are checked exactly like a pasted import: one bad event
+ * and that whole file is skipped. Events already over are left out.
+ * Nothing secret is involved — the repo is public. EVENTS_FEED_URL may
+ * point somewhere else; set it to "off" to stop this.
+ */
+var EVENTS_FEED_DEFAULT = 'https://raw.githubusercontent.com/ahamrousy/3aash-ya-wa7sh/main/docs/events/';
+
+function importEventsFeed_() {
+  var base = prop_('EVENTS_FEED_URL') || EVENTS_FEED_DEFAULT;
+  if (base === 'off') return { off: true };
+  if (!/^https:\/\//.test(base)) return { error: 'EVENTS_FEED_URL must start with https://' };
+  if (base.slice(-1) !== '/') base += '/';
+  var get = function (name) {
+    var res = UrlFetchApp.fetch(base + name + '?t=' + Date.now(), { muteHttpExceptions: true, followRedirects: true });
+    if (res.getResponseCode() !== 200) throw new Error(name + ': HTTP ' + res.getResponseCode());
+    return res.getContentText();
+  };
+  var manifest = JSON.parse(get('manifest.json'));
+  var files = (manifest && Array.isArray(manifest.files) ? manifest.files : [])
+    .filter(function (f) { return /^[\w.-]+\.json$/.test(String(f)) && f !== 'manifest.json'; })
+    .slice(-30);
+  var props = PropertiesService.getScriptProperties();
+  var done = {};
+  try { done = JSON.parse(props.getProperty('EVENTS_FEED_DONE') || '{}'); } catch (e) { done = {}; }
+  var today = cairoDay_();
+  var out = { files: 0, created: 0, updated: 0, unchanged: 0, skipped_past: 0, errors: [] };
+  files.forEach(function (f) {
+    var text;
+    try { text = get(f); } catch (e) { out.errors.push(String(e.message)); return; }
+    var sum = sha256Hex_(text);
+    if (done[f] === sum) return;
+    var list;
+    try { list = JSON.parse(text); } catch (e) { out.errors.push(f + ': not valid JSON'); return; }
+    if (list && !Array.isArray(list) && Array.isArray(list.events)) list = list.events;
+    if (!Array.isArray(list)) { out.errors.push(f + ': not a list'); return; }
+    var cleaned = [], errs = [];
+    list.slice(0, 300).forEach(function (raw, i) {
+      var c = cleanEvent_(raw);
+      c.errors.forEach(function (m) { errs.push(f + ' #' + (i + 1) + ' ' + (c.event.event_id || '?') + ' — ' + m); });
+      cleaned.push(c.event);
+    });
+    if (errs.length) { out.errors = out.errors.concat(errs.slice(0, 10)); return; }
+    var r = withLock_(function () {
+      cleaned.forEach(function (ev) {
+        var end = evDate_(ev.end_date) || evDate_(ev.start_date) || '';
+        if (end && end < today) { out.skipped_past++; return; }
+        out[upsertEvent_(ev, 'github:' + f)]++;
+      });
+      return 'ok';
+    });
+    if (r !== 'ok') { out.errors.push(f + ': sheet busy, will retry tomorrow'); return; }
+    done[f] = sum;
+    out.files++;
+  });
+  props.setProperty('EVENTS_FEED_DONE', JSON.stringify(done));
+  if (out.files) clearEventsCache_();
+  if (out.errors.length) log_('Event feed problems: ' + out.errors.join(' | '));
+  return out;
+}
+
+/** Menu: import new batch files from GitHub right now. */
+function runEventsFeedNow() {
+  var msg = 'GitHub event import: ' + JSON.stringify(importEventsFeed_());
+  try { SpreadsheetApp.getUi().alert(msg); } catch (e) { /* editor */ }
+  return msg;
 }
 
 /** Menu: create the once-a-day trigger (only one, however often it is pressed). */
