@@ -1328,9 +1328,12 @@
       updateNav();
     });
 
-    $('#btn-start').addEventListener('click', function () {
-      showScreen('screen-form');
-      goToStep(state.step || 1);
+    ['#btn-start', '#btn-start-top'].forEach(function (sel) {
+      var b = $(sel);
+      if (b) b.addEventListener('click', function () {
+        showScreen('screen-form');
+        goToStep(state.step || 1);
+      });
     });
     $('#btn-next').addEventListener('click', onNext);
     $('#btn-back').addEventListener('click', onBack);

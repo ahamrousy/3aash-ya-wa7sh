@@ -19,8 +19,8 @@ window.I18N = {
      ======================================================================== */
   ar: {
     /* --- page + brand ----------------------------------------------------- */
-    'meta.title'       : 'عاش يا وحش — سجّل معانا',
-    'meta.desc'        : 'استمارة الاشتراك في عاش يا وحش. بياناتك بتوصل لفريق عاش يا وحش بس.',
+    'meta.title'       : 'عاش يا وحش — مبادرة مجانية تساعدك تبدأ رياضة من الصفر',
+    'meta.desc'        : 'مبادرة مجتمعية مجانية في مصر: املا استمارة في 5 دقايق، ومدربين محترفين يكتبولك برنامج تمارين على مقاسك ويتابعوك أسبوع بأسبوع — حتى لو عمرك ما اتمرنت.',
     'brand.name'       : 'عاش يا وحش',
     'brand.tagline'    : 'ناس مننا مكملة في التغيير للأحسن',
     'brand.logo.alt'   : 'شعار عاش يا وحش',
@@ -638,8 +638,8 @@ window.I18N = {
 
     /* --- find your challenge (events) -------------------------------------- */
     'nav.events'              : 'لاقي تحدّيك',
-    'ev.doc'                  : 'لاقي تحدّيك — عاش يا وحش',
-    'ev.meta'                 : 'لاقي سباق أو تحدّي رياضي تشارك فيه — حتى لو لسه بتبدأ.',
+    'ev.doc'                  : 'لاقي تحدّيك — سباقات جري وفعاليات رياضية في مصر والخليج | عاش يا وحش',
+    'ev.meta'                 : 'سباقات جري وسباحة وترايثلون وعجل وتحديات رياضية في مصر والخليج، بتواريخها وأسعارها ولينكات التسجيل الرسمية — وفيها اختيارات مناسبة للمبتدئين.',
     'ev.kicker'               : 'لاقي تحدّيك',
     'ev.h1'                   : 'تحدّيك الجاي بيبدأ من هنا!',
     'ev.sub'                  : 'ما تستناش لما تبقى فِت عشان تبدأ. اختار تحدّي، احجز مكانك، وابدأ تتحرّك!',
@@ -896,7 +896,27 @@ window.I18N = {
     'ev.suggest.h'     : 'تعرف بطولة أو سباق مش موجود هنا؟',
     'ev.suggest.p'     : 'تنس، كورة، يد، فروسية، تجديف، أو أي رياضة — ابعتلنا اسمها ولينكها، وبعد ما نتأكد منها هنضيفها عشان الكل يشارك.',
     'ev.suggest.btn'   : 'ابعتهالنا على الواتساب',
-    'ev.suggest.msg'   : 'السلام عليكم، عايز أقترح فعالية رياضية لصفحة «لاقي تحدّيك»:\nالاسم:\nالرياضة:\nالمكان والتاريخ:\nلينك التسجيل:'
+    'ev.suggest.msg'   : 'السلام عليكم، عايز أقترح فعالية رياضية لصفحة «لاقي تحدّيك»:\nالاسم:\nالرياضة:\nالمكان والتاريخ:\nلينك التسجيل:',
+
+    /* --- SEO: titles, about, guides, event pages --------------------------- */
+    'pp.doc'      : 'سياسة الخصوصية — عاش يا وحش',
+    'pp.meta'     : 'إيه البيانات اللي عاش يا وحش بتجمعها، وليه، ومين بيشوفها، وإيه حقوقك فيها.',
+    'about.title' : 'يعني إيه عاش يا وحش؟',
+    'about.p1'    : 'عاش يا وحش مبادرة مجتمعية مجانية في مصر، أسسها د. أحمد عمروسي — مهندس ورياضي تحمّل، مش مدرب. هدفها تساعد الناس اللي مش بتتمرن ياخدوا أول خطوة لحياة فيها حركة ورياضة بانتظام.',
+    'about.p2'    : 'بتملا استمارة من 6 خطوات، ومدربين محترفين بيكتبولك برنامج تمارين على قد هدفك ووقتك وصحتك. بتتابع تمارينك من حسابك على الموقع، ولما تبقى جاهز تلاقي سباق أو تحدّي رياضي في مصر والخليج من صفحة «لاقي تحدّيك».',
+    'about.f.h'   : 'باختصار',
+    'about.f.1'   : 'مبادرة مجتمعية مجانية في مصر — مش جيم ولا شركة تدريب.',
+    'about.f.2'   : 'معمولة للي بيبدأ من الصفر، ومفتوحة لأي حد من 12 سنة وطالع.',
+    'about.f.3'   : 'برامج التمارين بيكتبها مدربين محترفين — مفيش برامج بتتعمل أوتوماتيك.',
+    'about.f.4'   : 'المؤسس، د. أحمد عمروسي، مهندس ورياضي تحمّل، مش مدرب.',
+    'about.f.5'   : '«لاقي تحدّيك» دليل لسباقات وفعاليات رياضية في مصر والخليج، باللينكات الرسمية بتاعتها.',
+    'guides.title': 'ابدأ من هنا',
+    'guides.1.t'  : 'إزاي تبدأ رياضة من الصفر',
+    'guides.1.d'  : 'خطة بسيطة لأول 4 أسابيع، لو عمرك ما اتمرنت أو بقالك سنين واقف.',
+    'guides.2.t'  : 'أول 5 كيلو: برنامج جري للمبتدئين',
+    'guides.2.d'  : 'من المشي لجري 5 كيلو متواصلين في حوالي 8 أسابيع، وإزاي تختار أول سباق.',
+    'evlist.h'    : 'صفحات الفعاليات',
+    'evlist.sub'  : 'كل فعالية ليها صفحة فيها التاريخ والمكان واللينكات الرسمية.'
   },
 
   /* ===========================================================================
@@ -904,8 +924,8 @@ window.I18N = {
      ======================================================================== */
   en: {
     /* --- page + brand ----------------------------------------------------- */
-    'meta.title'       : '3aash Ya Wa7sh — Join us',
-    'meta.desc'        : 'Sign-up form for 3aash Ya Wa7sh. Your data goes only to the 3aash Ya Wa7sh team.',
+    'meta.title'       : '3aash Ya Wa7sh — a free initiative to help you start exercising',
+    'meta.desc'        : 'A free community initiative in Egypt: fill in a 5-minute form and professional coaches write an exercise program for you and follow you up week by week — even if you have never trained.',
     'brand.name'       : '3aash Ya Wa7sh',
     'brand.tagline'    : 'People like us, still changing for the better',
     'brand.logo.alt'   : '3aash Ya Wa7sh logo',
@@ -1523,8 +1543,8 @@ window.I18N = {
 
     /* --- find your challenge (events) -------------------------------------- */
     'nav.events'              : 'Find Your Challenge',
-    'ev.doc'                  : 'Find Your Challenge — 3aash Ya Wa7sh',
-    'ev.meta'                 : 'Find a race or sports challenge you can take part in — even if you are just starting.',
+    'ev.doc'                  : 'Find Your Challenge — races and sports events in Egypt and the Gulf | 3aash Ya Wa7sh',
+    'ev.meta'                 : 'Running races, swims, triathlons, rides and fitness challenges in Egypt and the Gulf, with dates, prices and official registration links — including picks for beginners.',
     'ev.kicker'               : 'Find Your Challenge',
     'ev.h1'                   : 'Your Next Challenge Starts Here!',
     'ev.sub'                  : 'Don\'t wait until you\'re fit to start. Find a challenge, book your spot, and start moving!',
@@ -1781,6 +1801,26 @@ window.I18N = {
     'ev.suggest.h'     : 'Know a tournament or race that is not here?',
     'ev.suggest.p'     : 'Tennis, football, handball, horse riding, rowing or any sport — send us its name and link, and once we have checked it we will add it for everyone.',
     'ev.suggest.btn'   : 'Send it on WhatsApp',
-    'ev.suggest.msg'   : 'Hi, I would like to suggest an event for Find Your Challenge:\nName:\nSport:\nPlace and date:\nRegistration link:'
+    'ev.suggest.msg'   : 'Hi, I would like to suggest an event for Find Your Challenge:\nName:\nSport:\nPlace and date:\nRegistration link:',
+
+    /* --- SEO: titles, about, guides, event pages --------------------------- */
+    'pp.doc'      : 'Privacy policy — 3aash Ya Wa7sh',
+    'pp.meta'     : 'What data 3aash Ya Wa7sh collects, why, who can see it, and your rights over it.',
+    'about.title' : 'What is 3aash Ya Wa7sh?',
+    'about.p1'    : '3aash Ya Wa7sh is a free community initiative in Egypt, founded by Dr. Ahmed Amrousy — an engineer and endurance athlete, not a coach. It helps people who do not exercise take their first steps towards a regularly active life.',
+    'about.p2'    : 'You fill in a 6-step form, and professional coaches write an exercise program around your goal, schedule and health. You track your sessions in your account on the site, and when you are ready you can find a race or sports challenge in Egypt and the Gulf on Find Your Challenge.',
+    'about.f.h'   : 'In short',
+    'about.f.1'   : 'A free community initiative in Egypt — not a gym or a coaching business.',
+    'about.f.2'   : 'Built for complete beginners, and open to anyone aged 12 and up.',
+    'about.f.3'   : 'Exercise programs are written by professional coaches — never generated automatically.',
+    'about.f.4'   : 'The founder, Dr. Ahmed Amrousy, is an engineer and endurance athlete, not a coach.',
+    'about.f.5'   : 'Find Your Challenge lists races and sports events in Egypt and the Gulf, with their official links.',
+    'guides.title': 'Start here',
+    'guides.1.t'  : 'How to start exercising from zero',
+    'guides.1.d'  : 'A simple plan for your first 4 weeks if you have never trained, or stopped years ago.',
+    'guides.2.t'  : 'Your first 5K: a beginner running plan',
+    'guides.2.d'  : 'From walking to running 5 km non-stop in about 8 weeks, and how to choose your first race.',
+    'evlist.h'    : 'Event pages',
+    'evlist.sub'  : 'Each event has its own page with the date, the place and the official links.'
   }
 };

@@ -114,7 +114,10 @@ window.AYW = (function () {
   /** Pick the starting language: the visitor's saved choice wins, else config. */
   function initLang() {
     var saved = store.get(CFG.langStorageKey || 'ayw.lang');
-    setLang(I18N[saved] ? saved : (CFG.defaultLang || 'ar'), false);
+    /* No saved choice: use the page's own language, so the English pages
+       (en.html, events-en.html, ...) open in English. */
+    var own = document.documentElement.getAttribute('lang');
+    setLang(I18N[saved] ? saved : (I18N[own] ? own : (CFG.defaultLang || 'ar')), false);
   }
 
   /**

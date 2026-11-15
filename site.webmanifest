@@ -1,0 +1,16 @@
+{
+  "name": "عاش يا وحش — 3aash Ya Wa7sh",
+  "short_name": "عاش يا وحش",
+  "description": "مبادرة مجتمعية مجانية في مصر تساعدك تبدأ رياضة من الصفر. A free community initiative in Egypt that helps you start exercising.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "browser",
+  "background_color": "#FAF7F4",
+  "theme_color": "#394F9F",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
