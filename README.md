@@ -472,3 +472,18 @@ Built for Dr. Ahmed Amrousy — triathlete, marathoner, half-Ironman finisher �
 and for everyone who decides that today is the day they start.
 
 عاش يا وحش.
+
+## Search engines and AI (SEO / AEO / GEO)
+
+The public pages ship their text in the HTML, have English twins, and carry
+canonical, hreflang, Open Graph and JSON-LD. All of that is made by one script
+— there is still no build step to publish:
+
+    node tools/build-seo.js     # prerender text, English twins, event pages, sitemap.xml, llms.txt
+    node tools/check-seo.js     # must print OK
+
+Run both after changing `i18n.js`, `index.html` / `events.html` / `privacy.html`,
+an article, or `docs/events/*.json`, then commit. Never edit `en.html`,
+`events-en.html`, `privacy-en.html` or `events/*.html` by hand — they are
+overwritten. The weekly events task runs the script for you.
+Full details: `docs/SEO-REPORT.md`.
