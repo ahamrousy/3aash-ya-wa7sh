@@ -1367,9 +1367,19 @@
     if (hadDraft && hasRealAnswers()) {
       showScreen('screen-form');
       goToStep(state.step, { focus: false, scroll: false });
+    } else if (/^#(register|start)$/.test(location.hash)) {
+      /* Shared "register" links (e.g. ahmedamrousy.com/3aash/register) open the form directly. */
+      showScreen('screen-form');
+      goToStep(state.step || 1, { focus: false, scroll: false });
     } else {
       showScreen('screen-intro');
     }
+    window.addEventListener('hashchange', function () {
+      if (/^#(register|start)$/.test(location.hash) && !$('#screen-intro').hidden) {
+        showScreen('screen-form');
+        goToStep(state.step || 1);
+      }
+    });
 
     updateProgress();
     updateNav();
