@@ -1,0 +1,233 @@
+[
+  {
+    "venue": "Merryland Park, Heliopolis",
+    "end_date": "",
+    "start_time": "06:00",
+    "timezone": "Africa/Cairo",
+    "registration_deadline": "2027-03-26",
+    "price_from": 600,
+    "price_to": 1500,
+    "currency": "EGP",
+    "price_note": {
+      "ar": "الأسعار من غير ضريبة. إيرلي بيرد لحد 6 ديسمبر: 600–950 ج.م، العادي 850–1200 ج.م، المتأخر 1200–1500 ج.م (Basic Kit أو Full Kit)",
+      "en": "Prices exclude VAT. Early bird until 6 Dec: EGP 600–950; normal EGP 850–1,200; late EGP 1,200–1,500 (Basic or Full kit)"
+    },
+    "official_website": "https://cairohalfmarathon.com/",
+    "organizer": "Ministry of Youth and Sports / Cairo Runners",
+    "minimum_age": null,
+    "duration": "",
+    "equipment": "",
+    "fitness_requirements": {
+      "ar": "الـ 5 كم والفاميلي ران مناسبين لأي حد بيبدأ؛ الـ 21 كم محتاجة تمرين منتظم قبلها بكام شهر.",
+      "en": "The 5K fun run and family run suit complete beginners; the 21K needs a few months of regular training."
+    },
+    "last_verified": "2026-11-28",
+    "event_id": "cairo-half-marathon-2027",
+    "title": {
+      "ar": "نص ماراثون القاهرة 2027",
+      "en": "Cairo Half Marathon 2027"
+    },
+    "sport": "Running",
+    "category": "running",
+    "country": "Egypt",
+    "city": "Cairo",
+    "start_date": "2027-04-02",
+    "registration_url": "https://registration.cairorunners.com/",
+    "participation_type": "individual",
+    "event_type": "race",
+    "difficulty": "beginner",
+    "beginner_friendly": "yes",
+    "distances": "Half marathon 21K, 10K, 5K fun run, family run",
+    "description": {
+      "ar": "جري الصبح بدري في ميريلاند بمصر الجديدة. فيه 21 و10 و5 كيلو وجري للعيلة، يعني كل البيت يقدر يشارك. سعر الإيرلي بيرد لحد 6 ديسمبر.",
+      "en": "An early-morning run from Merryland Park in Heliopolis, with 21K, 10K, a 5K fun run and a family run. Early-bird prices until 6 December."
+    },
+    "registration_status": "open",
+    "verification_status": "verified",
+    "source_url": "https://cairohalfmarathon.com/"
+  },
+  {
+    "venue": "Saqqara Necropolis (start and finish beneath the Step Pyramid)",
+    "end_date": "",
+    "start_time": "08:00",
+    "timezone": "Africa/Cairo",
+    "registration_deadline": "2027-01-28",
+    "price_from": 1200,
+    "price_to": 1800,
+    "currency": "EGP",
+    "price_note": {
+      "ar": "من غير ضريبة 14%. إيرلي بيرد لحد 21 ديسمبر: 1200 ج.م، العادي لحد 20 يناير: 1500 ج.م، المتأخر: 1800 ج.م. باص 400 ج.م، تصريح عربية 800 ج.م",
+      "en": "Excluding 14% VAT. Early bird until 21 Dec: EGP 1,200; general to 20 Jan: EGP 1,500; late: EGP 1,800. Bus pass EGP 400, car pass EGP 800"
+    },
+    "official_website": "https://www.thetrifactory.com/SaqqaraHalfMarathon",
+    "organizer": "The TriFactory",
+    "minimum_age": 8,
+    "duration": "",
+    "equipment": "",
+    "fitness_requirements": {
+      "ar": "الـ 5 كم (من 8 سنين) مناسبة للمبتدئين؛ الـ 10 كم من 12 سنة والـ 21 كم من 16 سنة.",
+      "en": "The 5K (age 8+) suits beginners; the 10K is for ages 12+ and the 21K for ages 16+."
+    },
+    "last_verified": "2026-11-28",
+    "event_id": "saqqara-half-marathon-2027",
+    "title": {
+      "ar": "نص ماراثون سقارة 2027",
+      "en": "Saqqara Half Marathon 2027"
+    },
+    "sport": "Running",
+    "category": "running",
+    "country": "Egypt",
+    "city": "Giza",
+    "start_date": "2027-02-05",
+    "registration_url": "https://www.premieronline.com/event/saqqara_half_marathon_2027_8946",
+    "participation_type": "individual",
+    "event_type": "race",
+    "difficulty": "beginner",
+    "beginner_friendly": "yes",
+    "distances": "5K, 10K, 21K",
+    "description": {
+      "ar": "تجري جوه منطقة آثار سقارة، والبداية والنهاية تحت هرم زوسر المدرّج. فيه 5 و10 و21 كيلو، وميدالية وتيشيرت لكل اللي يخلّص.",
+      "en": "Run inside the Saqqara archaeological site, starting and finishing beneath the Step Pyramid. 5K, 10K and 21K, with a medal and T-shirt for every finisher."
+    },
+    "registration_status": "open",
+    "verification_status": "verified",
+    "source_url": "https://www.thetrifactory.com/SaqqaraHalfMarathon"
+  },
+  {
+    "venue": "Al Khuwair Square",
+    "end_date": "2027-01-30",
+    "start_time": "",
+    "timezone": "Asia/Muscat",
+    "registration_deadline": "",
+    "price_from": null,
+    "price_to": null,
+    "currency": "",
+    "price_note": {
+      "ar": "الماراثون الكامل من 99 دولار؛ أسعار باقي المسافات على صفحة التسجيل",
+      "en": "Full marathon from USD 99; other distances priced on the registration page"
+    },
+    "official_website": "https://muscatmarathon.om/",
+    "organizer": "SABCO",
+    "minimum_age": null,
+    "duration": "",
+    "equipment": "",
+    "fitness_requirements": {
+      "ar": "الـ 5 كم (ساعة كحد أقصى) والفان ران مناسبين للمبتدئين؛ الماراثون من 17 سنة وليه 6 ساعات.",
+      "en": "The 5K (1-hour cut-off) and fun run suit beginners; the marathon is 17+ with a 6-hour cut-off."
+    },
+    "last_verified": "2026-11-28",
+    "event_id": "muscat-marathon-2027",
+    "title": {
+      "ar": "ماراثون مسقط 2027",
+      "en": "Experience Oman Muscat Marathon 2027"
+    },
+    "sport": "Running",
+    "category": "running",
+    "country": "Oman",
+    "city": "Muscat",
+    "start_date": "2027-01-29",
+    "registration_url": "https://in.njuko.com/experience-oman-muscat-marathon-2027",
+    "participation_type": "individual",
+    "event_type": "race",
+    "difficulty": "beginner",
+    "beginner_friendly": "yes",
+    "distances": "Marathon 42.2K, half 21.1K, 10K, 5K, open fun run, kids run",
+    "description": {
+      "ar": "يومين جري في مسقط من ميدان الخوير: ماراثون ونص ماراثون و10 و5 كيلو، وكمان فان ران مفتوح وجري للأطفال.",
+      "en": "Two days of running in Muscat from Al Khuwair Square: marathon, half, 10K and 5K, plus an open fun run and kids runs."
+    },
+    "registration_status": "open",
+    "verification_status": "verified",
+    "source_url": "https://muscatmarathon.om/"
+  },
+  {
+    "venue": "Race Village, Old Town Amphitheatre",
+    "end_date": "2027-01-22",
+    "start_time": "",
+    "timezone": "Asia/Riyadh",
+    "registration_deadline": "",
+    "price_from": 100,
+    "price_to": null,
+    "currency": "SAR",
+    "price_note": {
+      "ar": "من 100 ريال سعودي",
+      "en": "From SAR 100"
+    },
+    "official_website": "https://www.experiencealula.com/en/whats-on/events/alula-trail-race",
+    "organizer": "Royal Commission for AlUla (Experience AlUla)",
+    "minimum_age": 5,
+    "duration": "",
+    "equipment": "",
+    "fitness_requirements": {
+      "ar": "الـ 3 كم وقت الغروب (من 13 سنة) والـ 10 كم مناسبين للبداية؛ الـ 50 و100 كم للناس المتمرّسة في التريل (من 18 سنة). جري الأطفال 1.6 كم من 5 لـ 12 سنة.",
+      "en": "The 3K sunset run (13+) and 10K are good starting points; 50K and 100K are for experienced trail runners (18+). Kids run 1.6K for ages 5–12."
+    },
+    "last_verified": "2026-11-28",
+    "event_id": "alula-trail-race-2027",
+    "title": {
+      "ar": "سباق العُلا للجري في الطبيعة 2027",
+      "en": "AlUla Trail Race 2027"
+    },
+    "sport": "Trail running",
+    "category": "running",
+    "country": "Saudi Arabia",
+    "city": "AlUla",
+    "start_date": "2027-01-21",
+    "registration_url": "",
+    "participation_type": "individual",
+    "event_type": "race",
+    "difficulty": "beginner",
+    "beginner_friendly": "yes",
+    "distances": "100K, 50K, 23K, 10K, 3K sunset run, 1.6K kids run",
+    "description": {
+      "ar": "جري وسط صخور وصحرا العُلا يومين. فيه من 1.6 كيلو للأطفال و3 كيلو وقت الغروب لحد 100 كيلو. صفحة الحجز الرسمية لسه ما اتأكدتش.",
+      "en": "Two days of trail running among AlUla's rocks and desert, from a 1.6K kids run and a 3K sunset run up to 100K. The booking link is not confirmed yet."
+    },
+    "registration_status": "unknown",
+    "verification_status": "partial",
+    "source_url": "https://www.experiencealula.com/en/whats-on/events/alula-trail-race"
+  },
+  {
+    "venue": "",
+    "end_date": "",
+    "timezone": "Asia/Riyadh",
+    "registration_deadline": "",
+    "price_from": null,
+    "price_to": null,
+    "currency": "",
+    "price_note": "",
+    "official_website": "https://sportsforall.com.sa/riyadh-marathon-2027",
+    "organizer": "Saudi Sports for All Federation",
+    "minimum_age": null,
+    "duration": "",
+    "equipment": "",
+    "fitness_requirements": {
+      "ar": "الـ 5 كم للعيلة لكل الأعمار؛ الـ 10 كم من 17 سنة، النص من 18، والماراثون الكامل من 20 سنة.",
+      "en": "The 5K family fun run is for all ages; the 10K is 17+, the half 18+ and the full marathon 20+."
+    },
+    "last_verified": "2026-11-28",
+    "event_id": "riyadh-marathon-2027",
+    "title": {
+      "ar": "ماراثون الرياض 2027",
+      "en": "Riyadh Marathon 2027"
+    },
+    "sport": "Running",
+    "category": "running",
+    "country": "Saudi Arabia",
+    "city": "Riyadh",
+    "start_date": "2027-02-06",
+    "registration_url": "https://in.sportsforall-register.com/riyadh-marathon-20271794584940663",
+    "participation_type": "individual",
+    "event_type": "race",
+    "difficulty": "beginner",
+    "beginner_friendly": "yes",
+    "distances": "5K family fun run, 10K, 21K, 42K",
+    "description": {
+      "ar": "الميعاد الرسمي اتغيّر: يوم السباق السبت 6 فبراير 2027، ضمن مهرجان 5 أيام من 2 لـ 6 فبراير. التسجيل فتح، والسنة اللي فاتت كل الفئات كملت بسرعة.",
+      "en": "New official date: race day is Saturday 6 February 2027, within a five-day festival from 2 to 6 February. Registration is open; last year every category sold out."
+    },
+    "registration_status": "open",
+    "verification_status": "verified",
+    "source_url": "https://sportsforall.com.sa/riyadh-marathon-2027"
+  }
+]
