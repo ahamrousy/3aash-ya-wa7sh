@@ -36,6 +36,7 @@ Arabic name: عاش يا وحش. English name: 3aash Ya Wa7sh. Website: https://
 - [Doha Marathon by Ooredoo 2027](https://ahmedamrousy.com/3aash-ya-wa7sh/events/doha-marathon-2027-en.html): 15 January 2027, Doha, Qatar
 - [26th Dubai Marathon](https://ahmedamrousy.com/3aash-ya-wa7sh/events/dubai-marathon-2027-en.html): 17 January 2027, Dubai, United Arab Emirates
 - [AlUla Trail Race 2027](https://ahmedamrousy.com/3aash-ya-wa7sh/events/alula-trail-race-2027-en.html): 21 January 2027, AlUla, Saudi Arabia
+- [Burj2Burj Half Marathon 2027](https://ahmedamrousy.com/3aash-ya-wa7sh/events/burj2burj-half-marathon-2027-en.html): 24 January 2027, Dubai, United Arab Emirates
 - [Experience Oman Muscat Marathon 2027](https://ahmedamrousy.com/3aash-ya-wa7sh/events/muscat-marathon-2027-en.html): 29 January 2027, Muscat, Oman
 - [Ras Al Khaimah Half Marathon 2027](https://ahmedamrousy.com/3aash-ya-wa7sh/events/ras-al-khaimah-half-marathon-2027-en.html): 30 January 2027, Ras Al Khaimah, United Arab Emirates
 - [IRONLADY Egypt 2027 — women’s 5 km](https://ahmedamrousy.com/3aash-ya-wa7sh/events/ironlady-egypt-2027-en.html): 5 February 2027, Sharm El Sheikh, Egypt
@@ -49,7 +50,9 @@ Arabic name: عاش يا وحش. English name: 3aash Ya Wa7sh. Website: https://
 - [IRONMAN 70.3 Doha 2027](https://ahmedamrousy.com/3aash-ya-wa7sh/events/ironman-70-3-doha-2027-en.html): 20 March 2027, Doha, Qatar
 - [L’Étape Dubai by Tour de France 2027](https://ahmedamrousy.com/3aash-ya-wa7sh/events/letape-dubai-2027-en.html): 20 March 2027, Dubai, United Arab Emirates
 - [Cairo Half Marathon 2027](https://ahmedamrousy.com/3aash-ya-wa7sh/events/cairo-half-marathon-2027-en.html): 2 April 2027, Cairo, Egypt
+- [T100 Saudi Arabia Amateur Races, Jeddah 2027](https://ahmedamrousy.com/3aash-ya-wa7sh/events/t100-saudi-arabia-jeddah-amateur-2027-en.html): 16 April 2027, Jeddah, Saudi Arabia
 - [Petra Desert Marathon 2027](https://ahmedamrousy.com/3aash-ya-wa7sh/events/petra-desert-marathon-2027-en.html): 4 September 2027, Petra, Jordan
+- [Ultra X Jordan 2027 – Wadi Rum](https://ahmedamrousy.com/3aash-ya-wa7sh/events/ultra-x-jordan-2027-en.html): 4 October 2027, Wadi Rum, Jordan
 - [King Sneferu Pyramids Challenge 2027](https://ahmedamrousy.com/3aash-ya-wa7sh/events/king-sneferu-pyramids-challenge-2027-en.html): 15 October 2027, Dahshur, Giza, Egypt
 
 ## Optional

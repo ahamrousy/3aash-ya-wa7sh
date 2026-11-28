@@ -399,5 +399,143 @@
     "registration_status": "open",
     "verification_status": "verified",
     "source_url": "https://petra-desert-marathon.com/"
+  },
+  {
+    "venue": "",
+    "end_date": "",
+    "start_time": "",
+    "timezone": "Asia/Dubai",
+    "registration_deadline": "",
+    "price_from": 350,
+    "price_to": 350,
+    "currency": "AED",
+    "price_note": {
+      "ar": "التذاكر الأرخص خلصت؛ المتاح دلوقتي سعر الـ Last Minute بـ 350 درهم لحد ما الأماكن تخلص",
+      "en": "Earlier tiers sold out; the current Last Minute Sale is AED 350 until capacity is reached"
+    },
+    "official_website": "https://www.burj2burj.com/",
+    "organizer": "",
+    "minimum_age": null,
+    "duration": "",
+    "equipment": "",
+    "fitness_requirements": {
+      "ar": "21 كيلو، فمحتاج تمرين جري منتظم قبلها. المنظّم عنده برنامج تمرين للمبتدئين.",
+      "en": "A 21.1K race, so regular run training beforehand is needed; the organiser offers a training programme for new runners."
+    },
+    "last_verified": "2026-11-28",
+    "event_id": "burj2burj-half-marathon-2027",
+    "title": {
+      "ar": "نص ماراثون برج 2 برج 2027",
+      "en": "Burj2Burj Half Marathon 2027"
+    },
+    "sport": "Running",
+    "category": "running",
+    "country": "United Arab Emirates",
+    "city": "Dubai",
+    "start_date": "2027-01-24",
+    "registration_url": "https://in.njuko.com/burj2burj-2027",
+    "participation_type": "individual",
+    "event_type": "race",
+    "difficulty": "amateur",
+    "beginner_friendly": "yes",
+    "distances": "Half marathon 21.1K",
+    "description": {
+      "ar": "نص ماراثون في شوارع دبي وقدام أشهر معالمها. التسجيل مفتوح بس الأماكن محدودة، فلو ناوي سجّل بدري. مناسب لأول نص ماراثون ليك.",
+      "en": "A half marathon through Dubai's landmark skyline. Entries are open but capped, so sign up early. Suitable for a first half marathon."
+    },
+    "registration_status": "open",
+    "verification_status": "verified",
+    "source_url": "https://www.burj2burj.com/"
+  },
+  {
+    "venue": "",
+    "end_date": "2027-04-17",
+    "start_time": "",
+    "timezone": "Asia/Riyadh",
+    "registration_deadline": "",
+    "price_from": null,
+    "price_to": null,
+    "currency": "",
+    "price_note": {
+      "ar": "السعر مش منشور على صفحة المنظّم",
+      "en": "Price not stated on the organiser's page"
+    },
+    "official_website": "https://www.t100triathlon.com/saudi-arabia/participate/",
+    "organizer": "T100 Triathlon World Tour / World Triathlon",
+    "minimum_age": null,
+    "duration": "",
+    "equipment": "",
+    "fitness_requirements": {
+      "ar": "السبرينت (750 م سباحة، 20 كم عجل، 5 كم جري) مناسب لأول ترايثلون، وفيه جري 5 كم و1 كم. الـ 100 كم محتاجة تمرين جامد.",
+      "en": "The sprint (750m swim, 20km bike, 5km run) suits a first triathlon, and there are 5K and 1K runs; the 100km race needs serious training."
+    },
+    "last_verified": "2026-11-28",
+    "event_id": "t100-saudi-arabia-jeddah-amateur-2027",
+    "title": {
+      "ar": "ترايثلون T100 السعودية – سباقات الهواة في جدة 2027",
+      "en": "T100 Saudi Arabia Amateur Races, Jeddah 2027"
+    },
+    "sport": "Triathlon",
+    "category": "multisport",
+    "country": "Saudi Arabia",
+    "city": "Jeddah",
+    "start_date": "2027-04-16",
+    "registration_url": "https://in.registrations.protriathletes.org/saudi-arabia-t100-2027",
+    "participation_type": "both",
+    "event_type": "race",
+    "difficulty": "beginner",
+    "beginner_friendly": "yes",
+    "distances": "100km triathlon (2km swim, 80km bike, 18km run) + relay, Sprint triathlon (750m, 20km, 5km) + relay, 5K run, 1K run",
+    "description": {
+      "ar": "سباقات للهواة جنب سباق المحترفين T100 في جدة، والسباحة في البحر. فيه سبرينت ترايثلون للمبتدئين وتتابع لو عايز تشارك مع صحابك، وكمان جري 5 و1 كيلو.",
+      "en": "Amateur races alongside the pro T100 in Jeddah, with an ocean swim. Options include a beginner-friendly sprint triathlon, relays for teams, and 5K and 1K runs."
+    },
+    "registration_status": "open",
+    "verification_status": "verified",
+    "source_url": "https://www.t100triathlon.com/saudi-arabia/participate/"
+  },
+  {
+    "venue": "Wadi Rum desert",
+    "end_date": "2027-10-08",
+    "start_time": "",
+    "timezone": "Asia/Amman",
+    "registration_deadline": "",
+    "price_from": null,
+    "price_to": null,
+    "currency": "",
+    "price_note": "",
+    "official_website": "https://ultra-x.co/jordan/",
+    "organizer": "Ultra X",
+    "minimum_age": null,
+    "duration": "",
+    "equipment": "",
+    "fitness_requirements": {
+      "ar": "سباق مراحل طويل في الصحرا، بس المنظّم بيقول إن أغلب المشاركين بيمشوا نص المسافة، والـ 110 كم معمولة للمشّايين وأول مرة.",
+      "en": "A long desert stage race, but the organiser says most entrants walk half the course; the 110km Challenge is designed for walkers and first-time multi-stage participants."
+    },
+    "last_verified": "2026-11-28",
+    "event_id": "ultra-x-jordan-2027",
+    "title": {
+      "ar": "ألترا إكس الأردن 2027 – وادي رم",
+      "en": "Ultra X Jordan 2027 – Wadi Rum"
+    },
+    "sport": "Ultra running / trekking",
+    "category": "adventure",
+    "country": "Jordan",
+    "city": "Wadi Rum",
+    "start_date": "2027-10-04",
+    "registration_url": "https://ultra-x.co/jordan/",
+    "participation_type": "individual",
+    "event_type": "adventure",
+    "difficulty": "advanced",
+    "beginner_friendly": "no",
+    "distances": "220km in 5 stages, 110km Jordan Challenge",
+    "description": {
+      "ar": "مغامرة 5 أيام في صحرا وادي رم، بتجري أو تمشي وتبات في معسكرات. فيه 220 كيلو أو تحدي 110 كيلو أسهل. للي عايز تحدي كبير.",
+      "en": "A five-day adventure across the Wadi Rum desert, running or walking between camps. Choose 220km or the easier 110km Challenge. For people wanting a big challenge."
+    },
+    "registration_status": "open",
+    "verification_status": "partial",
+    "source_url": "https://ultra-x.co/jordan/"
   }
 ]
